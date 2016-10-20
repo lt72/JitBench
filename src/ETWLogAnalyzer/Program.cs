@@ -46,14 +46,24 @@ namespace MusicStore.ETWLogAnalyzer
             // ~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~ //
             // ~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~ //
 
+            Console.WriteLine($"Opening ETW log file '{etwLogFile}'...");
+
             //
             // Find process of interest, there may be multiple, and we only want to look at the child-most one.
             // 
             var put = FindDotnetProcessStart(etwLogFile);
+            
+            if (put == null)
+            {
+                Console.WriteLine($"...could not find dotnet.exe process in ETW log file '{etwLogFile}'!");
 
+                return 1;
+            }
             // ~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~ //
             // ~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~ //
             // ~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~ //
+
+            Console.WriteLine("...analyzing data...");
 
             //
             // Now re-parse the log looking for the actual data we are interested in.
@@ -265,12 +275,15 @@ namespace MusicStore.ETWLogAnalyzer
             //
             // Generate some reports
             //
+
+            Console.WriteLine("...Generating reports...");
             var etwData = new ETWData(put, events);
             new StartupAndRequests().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter($"C:\\users\\lorenzte\\desktop\\data\\startup_and_requests.txt")  , true);
             new ThreadsSchedule   ().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter($"C:\\users\\lorenzte\\desktop\\data\\threads_schedule.txt")      , true);
             new Modules           ().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter($"C:\\users\\lorenzte\\desktop\\data\\assemblies_and_modules.txt"), true);
             new JitAndIO          ().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter($"C:\\users\\lorenzte\\desktop\\data\\.txt")                      , true);
 
+            Console.WriteLine("...done!");
             return 0;
         }
 
@@ -324,11 +337,6 @@ namespace MusicStore.ETWLogAnalyzer
                     //
                     put = proc; break;
                 }
-            }
-
-            if (put == null)
-            {
-                throw new ApplicationException($"ETW log file '{etwLogFile}' does not contain a valid instance of {processUnderTest}.");
             }
 
             return put;

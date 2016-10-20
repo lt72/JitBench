@@ -28,7 +28,7 @@ REM set KERNEL_EVENTS="Default+Process+Thread+ImageLoad+ProcessCounters+ContextS
 pushd src\MusicStore
 dotnet publish -c Release -f netcoreapp10
 pushd bin\Release\netcoreapp1.0\publish
-start /k \\clrmain\tools\PerfView.exe /NoGui /NoView /ClrEvents:%DOTNET_EVENTS% /KernelEvents:%KERNEL_EVENTS% /Providers:*aspnet-JitBench-MusicStore -Zip:FALSE run dotnet MusicStore.dll
+\\clrmain\tools\PerfView.exe /NoGui /NoView /ClrEvents:%DOTNET_EVENTS% /KernelEvents:%KERNEL_EVENTS% /Providers:*aspnet-JitBench-MusicStore -Zip:FALSE run dotnet MusicStore.dll
 popd
 popd
 
