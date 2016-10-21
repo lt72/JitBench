@@ -278,12 +278,13 @@ namespace MusicStore.ETWLogAnalyzer
 
             Console.WriteLine("...Generating reports...");
             var etwData = new ETWData(put, events);
-            new StartupAndRequests().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter($"C:\\users\\lorenzte\\desktop\\data\\startup_and_requests.txt")  , true);
-            new ThreadsSchedule   ().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter($"C:\\users\\lorenzte\\desktop\\data\\threads_schedule.txt")      , true);
-            new Modules           ().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter($"C:\\users\\lorenzte\\desktop\\data\\assemblies_and_modules.txt"), true);
-            new JitAndIO          ().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter($"C:\\users\\lorenzte\\desktop\\data\\.txt")                      , true);
+            new StartupAndRequests().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(Environment.ExpandEnvironmentVariables(@"%TEMP%\startup_and_requests.txt"))  , true);
+            new ThreadsSchedule   ().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(Environment.ExpandEnvironmentVariables(@"%TEMP%\threads_schedule.txt"))      , true);
+            new Modules           ().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(Environment.ExpandEnvironmentVariables(@"%TEMP%\assemblies_and_modules.txt")), true);
+            new JitAndIO          ().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(Environment.ExpandEnvironmentVariables(@"%TEMP%\jit_and_io.txt"))            , true);
 
             Console.WriteLine("...done!");
+
             return 0;
         }
 
