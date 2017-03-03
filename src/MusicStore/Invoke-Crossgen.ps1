@@ -50,8 +50,8 @@ $app_paths = @((Get-Item ".").FullName)
 
 if ($runtime -eq "win7-x64")
 {
-    $app_paths += (Get-Item ".\runtimes\win\lib\netstandard1.7").FullName
-    $lib_paths += (Get-Item ".\runtimes\win\lib\netstandard1.7").FullName
+    $app_paths += (Get-Item ".\runtimes\win\lib\netcoreapp2.0").FullName
+    $lib_paths += (Get-Item ".\runtimes\win\lib\netcoreapp2.0").FullName
 }
 else
 {
