@@ -12,6 +12,8 @@ namespace MusicStore
     {
         public static void Main(string[] args)
         {
+            Instrumentation.Logger.Log.ProgramStarted();
+
             var totalTime = Stopwatch.StartNew();
 
             var config = new ConfigurationBuilder()
@@ -54,6 +56,8 @@ namespace MusicStore
 
             host.Start();
 
+            Instrumentation.Logger.Log.ServerStarted();
+
             totalTime.Stop();
             Console.WriteLine("Server started in {0}ms", totalTime.ElapsedMilliseconds);
             Console.WriteLine();
@@ -63,6 +67,9 @@ namespace MusicStore
                 Console.WriteLine("Starting request to http://localhost:5000");
                 var requestTime = Stopwatch.StartNew();
                 var response = client.GetAsync("http://localhost:5000").Result;
+
+                Instrumentation.Logger.Log.RequestBatchServed(1);
+
                 requestTime.Stop();
                 Console.WriteLine("Response: {0}", response.StatusCode);
                 Console.WriteLine("Request took {0}ms", requestTime.ElapsedMilliseconds);
