@@ -25,9 +25,12 @@ set KERNEL_EVENTS="Default+Process+Thread+ImageLoad+ContextSwitch+DiskIO+DiskIOI
 REM set KERNEL_EVENTS="Default+Process+Thread+ImageLoad+ProcessCounters+ContextSwitch+DeferedProcedureCalls+SystemCall+DiskIO+DiskIOInit+Dispatcher+Memory+MemoryHardFaults+VirtualAlloc+VAMap+Registry+AdvancedLocalProcedureCalls+SplitIO+Handle+OS+ThreadTime+FileIO+FileIOInit+IOQueue+ThreadPriority"
 
 
+REM .\Dotnet-Install.ps1 -SharedRuntime -InstallDir .dotnet -Channel master -Architecture x64
+REM .\Dotnet-Install.ps1 -InstallDir .dotnet -Architecture x64
 pushd src\MusicStore
-dotnet publish -c Release -f netcoreapp10
-pushd bin\Release\netcoreapp1.0\publish
+dotnet restore
+dotnet publish -c Release -f netcoreapp20
+pushd bin\Release\netcoreapp20\publish
 \\clrmain\tools\PerfView.exe /NoGui /NoView /ClrEvents:%DOTNET_EVENTS% /KernelEvents:%KERNEL_EVENTS% /Providers:*aspnet-JitBench-MusicStore -Zip:FALSE run dotnet MusicStore.dll
 popd
 popd
