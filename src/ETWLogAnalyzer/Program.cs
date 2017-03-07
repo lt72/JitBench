@@ -30,13 +30,8 @@ namespace MusicStore.ETWLogAnalyzer
             }
 
             var testProcess = CmdLine.TestProcess;
-            var etwLogFile = CmdLine.EtwLog;
-
-            if (File.Exists(etwLogFile) == false)
-            {
-                throw new ArgumentException($"EWT Log File {etwLogFile} does not exists.");
-            }
-
+            var etwLogFile  = CmdLine.EtwLog;
+            
             // ~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~ //
             // ~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~ //
             // ~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~ //
@@ -270,10 +265,22 @@ namespace MusicStore.ETWLogAnalyzer
 
             Console.WriteLine("...Generating reports...");
             var etwData = new ETWData(testProcessData, events);
-            new StartupAndRequests().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(Environment.ExpandEnvironmentVariables(@"%TEMP%\startup_and_requests.txt"))  , true);
-            new ThreadsSchedule   ().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(Environment.ExpandEnvironmentVariables(@"%TEMP%\threads_schedule.txt"))      , true);
-            new Modules           ().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(Environment.ExpandEnvironmentVariables(@"%TEMP%\assemblies_and_modules.txt")), true);
-            new JitAndIO          ().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(Environment.ExpandEnvironmentVariables(@"%TEMP%\jit_and_io.txt"))            , true);
+
+            var startupAndReqs = Environment.ExpandEnvironmentVariables(@"%TEMP%\startup_and_requests.txt");
+            Console.WriteLine($"... file: {startupAndReqs}");
+            new StartupAndRequests().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(startupAndReqs), true);
+
+            var threadsSchedule = Environment.ExpandEnvironmentVariables(@"%TEMP%\threads_schedule.txt");
+            Console.WriteLine($"... file: {threadsSchedule}");
+            new ThreadsSchedule().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(threadsSchedule), true);
+
+            var assembliesAndModules = Environment.ExpandEnvironmentVariables(@"%TEMP%\assemblies_and_modules.txt");
+            Console.WriteLine($"... file: {assembliesAndModules}");
+            new Modules().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(assembliesAndModules), true);
+
+            var jitAndIo = Environment.ExpandEnvironmentVariables(@"%TEMP%\jit_and_io.txt");
+            Console.WriteLine($"... file: {jitAndIo}");
+            new JitAndIO().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(jitAndIo), true);
 
             Console.WriteLine("...done!");
 

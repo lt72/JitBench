@@ -25,6 +25,8 @@ namespace MusicStore.ETWLogAnalyzer
 
             foreach(var arg in args)
             {
+                string swtchValue = String.Empty;
+
                 var swtchEnd = arg.IndexOf(SwitchValueSeparator);
 
                 bool hasValue = swtchEnd != -1;
@@ -35,11 +37,8 @@ namespace MusicStore.ETWLogAnalyzer
                 {
                     return Cmd.ShowHelp;
                 }
-
-                if (swtchName == "/etwLog")
+                else if (swtchName == "/etwLog")
                 {
-                    string swtchValue = String.Empty;
-
                     if (hasValue)
                     {
                         swtchValue = arg.Substring(swtchEnd + 1);                            
@@ -54,11 +53,8 @@ namespace MusicStore.ETWLogAnalyzer
 
                     EtwLog = swtchValue;
                 }
-
-                if (swtchName == "/testProcess")
+                else if (swtchName == "/testProcess")
                 {
-                    string swtchValue = String.Empty;
-
                     if (hasValue)
                     {
                         swtchValue = arg.Substring(swtchEnd + 1);
@@ -73,6 +69,26 @@ namespace MusicStore.ETWLogAnalyzer
 
                     TestProcess = swtchValue;
                 }
+                else
+                {
+                    Console.WriteLine($"INVALID ARGUMENT: switch {swtchName} is not recognized.");
+
+                    return Cmd.ShowHelp;
+                }
+            }
+
+            if (String.IsNullOrEmpty(TestProcess) || String.IsNullOrEmpty(EtwLog))
+            {
+                Console.WriteLine($"INVALID ARGUMENT: Parameters /testProcess and /etwLog cannot be null or empty.");
+
+                return Cmd.ShowHelp;
+            }
+
+            if (File.Exists(EtwLog) == false)
+            {
+                Console.WriteLine($"EWT Log File {EtwLog} does not exists.");
+
+                return Cmd.ShowHelp;
             }
 
             return Cmd.Run;
