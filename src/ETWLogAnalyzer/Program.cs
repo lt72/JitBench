@@ -24,18 +24,13 @@ namespace MusicStore.ETWLogAnalyzer
         /// <returns></returns>
         public static int Main(string[] args)
         {
-            //
-            // Parse command line.
-            //
-            if (args.Length > 0)
+            if (CmdLine.Process(args) == CmdLine.Cmd.ShowHelp)
             {
-                if (CmdLine.Process(args) == CmdLine.Cmd.ShowHelp)
-                {
-                    return CmdLine.Usage();
-                }
+                return CmdLine.Usage();
             }
 
-            var etwLogFile = CmdLine.Arguments[CmdLine.EtwLogSwitch].Value;
+            var testProcess = CmdLine.TestProcess;
+            var etwLogFile = CmdLine.EtwLog;
 
             if (File.Exists(etwLogFile) == false)
             {
@@ -51,27 +46,24 @@ namespace MusicStore.ETWLogAnalyzer
             //
             // Find process of interest, there may be multiple, and we only want to look at the child-most one.
             // 
-            var put = FindDotnetProcessStart(etwLogFile);
+            var testProcessData = FindTestProcessProcessStart(etwLogFile, testProcess);
             
-            if (put == null)
+            if (testProcessData == null)
             {
-                Console.WriteLine($"...could not find dotnet.exe process in ETW log file '{etwLogFile}'!");
+                Console.WriteLine($"...could not find {testProcess} process in ETW log file '{etwLogFile}'!");
 
                 return 1;
             }
-            // ~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~ //
-            // ~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~ //
-            // ~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~ //
 
-            Console.WriteLine("...analyzing data...");
+            Console.WriteLine("...analyzing data for {testProcess}...");
 
             //
             // Now re-parse the log looking for the actual data we are interested in.
             //
-            var events = new ETWData.ETWEventsHolder(put.ProcessID);            
+            var events = new ETWData.ETWEventsHolder(testProcessData.ProcessID);            
             using (var source = new TRACING.ETWTraceEventSource(etwLogFile))
             {
-                var id = put.ProcessID;
+                var id = testProcessData.ProcessID;
 
                 //
                 // Kernel
@@ -277,7 +269,7 @@ namespace MusicStore.ETWLogAnalyzer
             //
 
             Console.WriteLine("...Generating reports...");
-            var etwData = new ETWData(put, events);
+            var etwData = new ETWData(testProcessData, events);
             new StartupAndRequests().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(Environment.ExpandEnvironmentVariables(@"%TEMP%\startup_and_requests.txt"))  , true);
             new ThreadsSchedule   ().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(Environment.ExpandEnvironmentVariables(@"%TEMP%\threads_schedule.txt"))      , true);
             new Modules           ().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(Environment.ExpandEnvironmentVariables(@"%TEMP%\assemblies_and_modules.txt")), true);
@@ -293,16 +285,14 @@ namespace MusicStore.ETWLogAnalyzer
             return name.Replace('\\', '/');
         }
 
-        private static PARSERS.Kernel.ProcessTraceData FindDotnetProcessStart(string etwLogFile)
+        private static PARSERS.Kernel.ProcessTraceData FindTestProcessProcessStart(string etwLogFile, string testProcess)
         {
             //
             // dotnet host may spawn more than one dotnet process. We only need to look 
             // at the child process that actually hosts MusicStore.dll.
             //
-
-            var processUnderTest = CmdLine.Arguments[CmdLine.PUTSwitch].Value;
-
             var dotnets = new Dictionary<int, PARSERS.Kernel.ProcessTraceData>();
+
             using (var source = new TRACING.ETWTraceEventSource(etwLogFile))
             {
                 //
@@ -312,7 +302,7 @@ namespace MusicStore.ETWLogAnalyzer
 
                 kernelParser.ProcessStart += delegate (PARSERS.Kernel.ProcessTraceData proc)
                 {
-                    if (FilterProcessByName(proc, processUnderTest)) return;
+                    if (FilterProcessByName(proc, testProcess)) return;
 
                     //
                     // Could be the father or child process, accumulate all instances for later analysis. 
@@ -325,10 +315,10 @@ namespace MusicStore.ETWLogAnalyzer
             }
 
             //
-            // The process we are interested in is the last child. 
-            // It will have no parent
+            // The process we are interested in is the child-most one, which will have no parent
             //
-            PARSERS.Kernel.ProcessTraceData put = null;
+            PARSERS.Kernel.ProcessTraceData testProcessData = null;
+
             foreach (var proc in dotnets.Values)
             {
                 if (dotnets.ContainsKey(proc.ParentID) == false)
@@ -336,11 +326,11 @@ namespace MusicStore.ETWLogAnalyzer
                     //
                     // Found a process that is not a parent of any other process
                     //
-                    put = proc; break;
+                    testProcessData = proc; break;
                 }
             }
 
-            return put;
+            return testProcessData;
         }
 
         private static bool FilterProcessByName(TRACING.TraceEvent proc, string processUnderTest)

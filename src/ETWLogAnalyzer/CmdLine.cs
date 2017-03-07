@@ -12,91 +12,17 @@ namespace MusicStore.ETWLogAnalyzer
             Run,
         }
 
-        internal class Argument
-        {
-            protected Argument(string swtch, string example, string description, string deflt, string value)
-            {
-                this.Switch = swtch;
-                this.Example = example;
-                this.Description = description;
-                this.Default = deflt;
-                this.Value = value;
-            }
-
-            internal static Argument New(string swtch, string example, string description, string deflt, string value)
-            {
-                return new Argument(swtch, example, description, deflt, value);
-            }
-
-            internal static Argument NewValue(Argument arg, string value)
-            {
-                if(String.IsNullOrEmpty(value))
-                {
-                    throw new InvalidOperationException("Do not use null or empty values for any arguments"); 
-                }
-
-                arg.Value = value;
-
-                return arg; 
-            }
-
-            internal string Switch { get; private set; }
-            internal string Example { get; private set; }
-            internal string Description { get; private set; }
-            internal string Default { get; private set; }
-            internal string Value { get; private set; }
-
-            internal virtual string PrettyPrint()
-            {
-                return $"{this.Switch}{CmdLine.SwitchValueSeparator}<{this.Example}>: {this.Description}. If not specified defauls to {this.Default}.";
-            }
-        }
-
-        internal class NoValueArgument : Argument
-        {
-
-            private NoValueArgument(string swtch, string description) : base(swtch, String.Empty, description, String.Empty, String.Empty)
-            {
-            }
-
-            internal static Argument New(string swtch, string description)
-            {
-                return new NoValueArgument(swtch, description);
-            }
-
-            internal override string PrettyPrint()
-            {
-                return $"{this.Switch}: {this.Description}.";
-            }
-        }
-
-        internal static readonly Dictionary<string, Argument> Arguments = new Dictionary<string, Argument>();
-
         internal static readonly char SwitchValueSeparator = '=';
-        //--//
-        internal static readonly string HelpSwitch = "/help";
-        internal static readonly string HelpDescription = "Shows this help";
-        //--//
-        internal static readonly string PUTSwitch = "/put";
-        internal static readonly string PUTExample = "process name, without extension";
-        internal static readonly string PUTDescription = "name of the process to analyze";
-        internal static readonly string PUTDefault = "dotnet";
-        //--//
-        internal static readonly string EtwLogSwitch = "/etwLog";
-        internal static readonly string EtwLogExample = "path to file";
-        internal static readonly string EtwLogDescription = "name of the ETW log file to analyze";
-        internal static readonly string EtwLogDefault = "." + Path.DirectorySeparatorChar + "PerfViewData.etl.zip";
-        //--//
-
-        static CmdLine()
-        {
-            Arguments.Add(HelpSwitch, Argument.New(HelpSwitch, String.Empty, HelpDescription, String.Empty, String.Empty));
-            Arguments.Add(EtwLogSwitch, Argument.New(EtwLogSwitch, EtwLogExample, EtwLogDescription, EtwLogDefault, EtwLogDefault));
-            Arguments.Add(PUTSwitch, Argument.New(PUTSwitch, PUTExample, PUTDescription, PUTDefault, PUTDefault));
-        }
 
         internal static Cmd Process(string[] args)
         {
+            if(args == null || args.Length == 0)
+            {
+                Console.WriteLine("INVALID ARGUMENT: no argument were supplied.");
+
+                return Cmd.ShowHelp;
+            }
+
             foreach(var arg in args)
             {
                 var swtchEnd = arg.IndexOf(SwitchValueSeparator);
@@ -104,29 +30,48 @@ namespace MusicStore.ETWLogAnalyzer
                 bool hasValue = swtchEnd != -1;
 
                 var swtchName = hasValue ? arg.Substring(0, swtchEnd) : arg;
-
-                if(Arguments.ContainsKey(swtchName))
+                
+                if (swtchName == "/help")
                 {
-                    if(swtchName == HelpSwitch)
-                    {
-                        return Cmd.ShowHelp;
-                    }
+                    return Cmd.ShowHelp;
+                }
+
+                if (swtchName == "/etwLog")
+                {
+                    string swtchValue = String.Empty;
 
                     if (hasValue)
                     {
-                        var swtchValue = arg.Substring(swtchEnd + 1);
-
-                        if (String.IsNullOrEmpty(swtchValue))
-                        {
-                            return Cmd.ShowHelp;
-                        }
-
-                        Argument.NewValue(Arguments[swtchName], swtchValue);
+                        swtchValue = arg.Substring(swtchEnd + 1);                            
                     }
+
+                    if (hasValue == false || String.IsNullOrEmpty(swtchValue))
+                    {
+                        Console.WriteLine( "INVALID ARGUMENT: No valid value was supplied for /etwLog switch."); 
+
+                        return Cmd.ShowHelp;
+                    }
+
+                    EtwLog = swtchValue;
                 }
-                else
+
+                if (swtchName == "/testProcess")
                 {
-                    return Cmd.ShowHelp;
+                    string swtchValue = String.Empty;
+
+                    if (hasValue)
+                    {
+                        swtchValue = arg.Substring(swtchEnd + 1);
+                    }
+
+                    if (hasValue == false || String.IsNullOrEmpty(swtchValue))
+                    {
+                        Console.WriteLine("INVALID ARGUMENT: No valid value was supplied for /testProcess switch.");
+
+                        return Cmd.ShowHelp;
+                    }
+
+                    TestProcess = swtchValue;
                 }
             }
 
@@ -135,17 +80,21 @@ namespace MusicStore.ETWLogAnalyzer
 
         internal static int Usage()
         {
-            System.Console.WriteLine("Starts a new instance of the ETWLogAnalyzer for the JitBench repo. See https://github.com/aspnet/jitbench");
-            System.Console.WriteLine("Arguments:");
+            Console.WriteLine("");
+            Console.WriteLine("MusicStore.ETWLogAnalyzer.exe: starts a new instance of the ETWLogAnalyzer for the JitBench repo. See https://github.com/aspnet/jitbench");
+            Console.WriteLine(@"Usage: MusicStore.ETWLogAnalyzer.exe /testProcess=<process name> /etwLog=<absolute path to etl file>");
+            Console.WriteLine("");
+            Console.WriteLine(@"Example: MusicStore.ETWLogAnalyzer.exe /testProcess=dotnet /etwLog=c:\temp\PerfViewTrace.etl");
+            Console.WriteLine("");
 
-            foreach (var arg in Arguments.Values)
-            {
-                System.Console.WriteLine(arg.PrettyPrint()); 
-            }
-
-            System.Console.WriteLine("");
 
             return -1;
         }
+
+        //--//
+
+        public static string EtwLog { get; internal set; }
+        public static string TestProcess { get; internal set; }
+
     }
 }

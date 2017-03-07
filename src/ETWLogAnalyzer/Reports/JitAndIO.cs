@@ -44,7 +44,7 @@ namespace MusicStore.ETWLogAnalyzer
                 }
             }
 
-            _allJit.Sort(new ETWData.JitEvent.JitDurationComparer());
+            //_allJit.Sort(new ETWData.JitEvent.JitDurationComparer());
 
             //
             // Calculate total/min/max/average JIT time for all threads
@@ -101,12 +101,30 @@ namespace MusicStore.ETWLogAnalyzer
                 writer.WriteLine($"Thread {jitTime.Key}\t\t: jit events: {jitTime.Value.JitEvents}, jit total time: {jitTime.Value.TotalTime}, (min: {jitTime.Value.MinimumTime}, avg: {jitTime.Value.AverageTime}, max: {jitTime.Value.MaximunTime})");
             }
 
-            writer.WriteHeader("Jit time for all methods in order of duration (longest to shortest):"); 
+            writer.WriteHeader("Jit time for all methods in order of Jit start time:");
+
+            _allJit.Sort(new ETWData.JitEvent.JitStartComparer());
+
+            foreach (var jit in _allJit)
+            {
+                bool hasIO = _JitWithIO.Contains(jit.FullyQualifiedMethodName);
+                
+                writer.WriteLine($"Method: {jit}, jit start at {jit.BeginTime}, duration {jit.Duration}, has I/O ? : {hasIO}");
+            }
+
+            writer.WriteHeader("");
+            writer.WriteHeader("");
+            writer.WriteHeader("");
+
+            writer.WriteHeader("Jit time for all methods in order of Jit time duration:");
+
+            _allJit.Sort(new ETWData.JitEvent.JitDurationComparer());
+
             foreach (var jit in _allJit)
             {
                 bool hasIO = _JitWithIO.Contains(jit.FullyQualifiedMethodName);
 
-                writer.WriteLine($"Duration (IO:{hasIO}):  {jit.Duration}  ==> method(start jit at{jit.BeginTime}): {jit}");
+                writer.WriteLine($"Method: {jit}, jit start at {jit.BeginTime}, duration {jit.Duration}, has I/O ? : {hasIO}");
             }
 
             if (dispose)

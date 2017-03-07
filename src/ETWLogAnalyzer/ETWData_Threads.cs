@@ -91,6 +91,25 @@ namespace MusicStore.ETWLogAnalyzer
                     return 0;
                 }
             }
+            internal class JitStartComparer : IComparer<JitEvent>
+            {
+                public int Compare(JitEvent x, JitEvent y)
+                {
+                    //
+                    // Reverse order, longest to shortest
+                    //
+                    if (x.BeginTime > y.BeginTime)
+                    {
+                        return -1;
+                    }
+                    else if (x.BeginTime < y.BeginTime)
+                    {
+                        return 1;
+                    }
+
+                    return 0;
+                }
+            }
 
             internal JitEvent(PARSERS.Clr.MethodJittingStartedTraceData etwData) : base(etwData)
             {
@@ -128,7 +147,7 @@ namespace MusicStore.ETWLogAnalyzer
             
             public override string ToString()
             {
-                return $"{FullyQualifiedMethodName}: @{BeginTime} for {Duration}";
+                return $"{FullyQualifiedMethodName} (Token:{MethodToken})";
             }
         }
 

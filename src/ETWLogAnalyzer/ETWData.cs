@@ -188,7 +188,7 @@ namespace MusicStore.ETWLogAnalyzer
 
         public ETWData(PARSERS.Kernel.ProcessTraceData data, ETWEventsHolder events)
         {
-            this.PidUnderTest = data.ProcessID;
+            this.TestProcessPid = data.ProcessID;
             this.TimeBase = data.TimeStampRelativeMSec;
 
             Analyze(events); 
@@ -253,7 +253,7 @@ namespace MusicStore.ETWLogAnalyzer
             Debug.Assert(_threadEvents.Keys.Count == _schedule.Keys.Count); 
         }
         
-        internal int PidUnderTest { get; private set; }
+        internal int TestProcessPid { get; private set; }
 
         internal double TimeBase { get; private set; }
     }
