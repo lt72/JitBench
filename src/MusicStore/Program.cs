@@ -13,6 +13,8 @@ namespace MusicStore
     {
         public static void Main(string[] args)
         {
+            Instrumentation.Logger.Log.ProgramStarted();
+
             var totalTime = Stopwatch.StartNew();
 
             var config = new ConfigurationBuilder()
@@ -36,6 +38,8 @@ namespace MusicStore
 
             host.Start();
 
+            Instrumentation.Logger.Log.ServerStarted();
+
             totalTime.Stop();
             var serverStartupTime = totalTime.ElapsedMilliseconds;
             Console.WriteLine("Server started in {0}ms", serverStartupTime);
@@ -56,7 +60,7 @@ namespace MusicStore
                 Console.WriteLine("Cold start time (server start + first request time): {0}ms", serverStartupTime + firstRequestTime);
                 Console.WriteLine();
                 Console.WriteLine();
-                
+
                 var minRequestTime = long.MaxValue;
                 var maxRequestTime = long.MinValue;
                 var averageRequestTime = 0.0;
@@ -67,6 +71,8 @@ namespace MusicStore
                     requestTime.Restart();
                     response = client.GetAsync("http://localhost:5000").Result;
                     requestTime.Stop();
+
+                    Instrumentation.Logger.Log.RequestBatchServed(1);
 
                     var requestTimeElapsed = requestTime.ElapsedMilliseconds;
                     if (requestTimeElapsed < minRequestTime)
