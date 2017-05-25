@@ -23,7 +23,7 @@ namespace MusicStore.ETWLogAnalyzer
 
         public override ReportBase Analyze(ETWData data)
         {
-            using (var _writer = new StreamWriter(@"C:\users\lorenzte\desktop\data\items.txt"))
+            using (var _writer = new StreamWriter(@"E:\JitBench\data.txt"))
             {
                 foreach (var k in data.ThreadEvents.Keys)
                 {
