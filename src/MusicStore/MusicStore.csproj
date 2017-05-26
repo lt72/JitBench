@@ -22,10 +22,10 @@
   </PropertyGroup>
   
   <PropertyGroup Condition=" '$(AspNetVersion)' == '' ">
-    <AspNetVersion>2.0.0-preview1-24493</AspNetVersion>
+    <AspNetVersion>2.0.0-*</AspNetVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(RuntimeFrameworkVersion)' == '' ">
-    <RuntimeFrameworkVersion>2.0.0-preview2-002062-00</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>2.0.0-preview2-25316-01</RuntimeFrameworkVersion>
   </PropertyGroup>
   
   <ItemGroup>
