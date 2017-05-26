@@ -26,6 +26,8 @@ REM set KERNEL_EVENTS="Default+Process+Thread+ImageLoad+ProcessCounters+ContextS
 
 
 powershell ./Dotnet-Install.ps1 -SharedRuntime -InstallDir .dotnet -Channel master -Architecture x64 -Version 2.0.0-preview2-002062-00
+powershell ./Dotnet-Install.ps1 -InstallDir .dotnet -Channel master -Architecture x64
+
 REM .\Dotnet-Install.ps1 -InstallDir .dotnet -Architecture x64
 pushd src\MusicStore
 ..\..\.dotnet\dotnet restore
