@@ -25,7 +25,7 @@ set KERNEL_EVENTS="Default+Process+Thread+ImageLoad+ContextSwitch+DiskIO+DiskIOI
 REM set KERNEL_EVENTS="Default+Process+Thread+ImageLoad+ProcessCounters+ContextSwitch+DeferedProcedureCalls+SystemCall+DiskIO+DiskIOInit+Dispatcher+Memory+MemoryHardFaults+VirtualAlloc+VAMap+Registry+AdvancedLocalProcedureCalls+SplitIO+Handle+OS+ThreadTime+FileIO+FileIOInit+IOQueue+ThreadPriority"
 
 
-powershell ./Dotnet-Install.ps1 -SharedRuntime -InstallDir .dotnet -Channel master -Architecture x64 -Version 2.0.0-preview2-002062-00
+powershell ./Dotnet-Install.ps1 -SharedRuntime -InstallDir .dotnet -Channel master -Architecture x64 -Version 2.0.0-preview2-25316-01
 powershell ./Dotnet-Install.ps1 -InstallDir .dotnet -Channel master -Architecture x64
 
 REM .\Dotnet-Install.ps1 -InstallDir .dotnet -Architecture x64
