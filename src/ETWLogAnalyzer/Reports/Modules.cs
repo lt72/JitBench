@@ -23,31 +23,27 @@ namespace MusicStore.ETWLogAnalyzer
 
         public override ReportBase Analyze(ETWData data)
         {
-            using (var _writer = new StreamWriter(@"E:\JitBench\data.txt"))
+            foreach (var k in data.ThreadEvents.Keys)
             {
-                foreach (var k in data.ThreadEvents.Keys)
-                {
-                    var th = data.ThreadEvents[k];
+                var th = data.ThreadEvents[k];
                     
-                    foreach (var ev in th)
+                foreach (var ev in th)
+                {
+
+                    if (ev is PARSERS.Clr.AssemblyLoadUnloadTraceData)
                     {
+                        var tag = Normalize(((PARSERS.Clr.AssemblyLoadUnloadTraceData)ev).FullyQualifiedAssemblyName);
 
-                        if (ev is PARSERS.Clr.AssemblyLoadUnloadTraceData)
-                        {
-                            var tag = Normalize(((PARSERS.Clr.AssemblyLoadUnloadTraceData)ev).FullyQualifiedAssemblyName);
-
-                            _assembliesLoaded.Add(tag);
-                        }
-                        else if (ev is PARSERS.Clr.ModuleLoadUnloadTraceData)
-                        {
-                            var tag = Normalize(((PARSERS.Clr.ModuleLoadUnloadTraceData)ev).ModuleILPath);
-
-                            _modulesLoaded.Add(tag);
-                        }
+                        _assembliesLoaded.Add(tag);
                     }
-                }                
-            }
+                    else if (ev is PARSERS.Clr.ModuleLoadUnloadTraceData)
+                    {
+                        var tag = Normalize(((PARSERS.Clr.ModuleLoadUnloadTraceData)ev).ModuleILPath);
 
+                        _modulesLoaded.Add(tag);
+                    }
+                }
+            }
             return this;
         }
 
