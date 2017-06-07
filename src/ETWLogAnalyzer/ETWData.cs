@@ -4,6 +4,7 @@ using System.Diagnostics;
 
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
+using MusicStore.ETWLogAnalyzer.EventFilters;
 
 namespace MusicStore.ETWLogAnalyzer
 {
@@ -20,19 +21,35 @@ namespace MusicStore.ETWLogAnalyzer
             /// </summary>
             private readonly SortedDictionary<double, List<TRACING.TraceEvent>> _events;
             /// <summary>
-            /// Keep track of all context switches, to and from the process under test.
+            /// Schedule of all the events that affect a given thread.
             /// </summary>
-            private readonly Dictionary<int, SortedList<double, PARSERS.Kernel.CSwitchTraceData>> _contextSwitches;
+            private readonly Dictionary<int, SortedList<double, TRACING.TraceEvent>> _threadSchedule;
             /// <summary>
-            /// Record all custom events we created
+            /// Set of filters that can be used to determine if an event is relevant to the thread.
             /// </summary>
-            private readonly List<TRACING.TraceEvent> _customEvents = new List<TRACING.TraceEvent>();
+            private readonly Dictionary<Type, IEventFilter> _filters;
+
 
             public ETWEventsHolder(int pid)
             {
                 _pidUnderTest = pid;
-                _events = new SortedDictionary<double, List<Microsoft.Diagnostics.Tracing.TraceEvent>>();
-                _contextSwitches = new Dictionary<int, SortedList<double, PARSERS.Kernel.CSwitchTraceData>>(); 
+                _events = new SortedDictionary<double, List<TRACING.TraceEvent>>();
+                _threadSchedule = new Dictionary<int, SortedList<double, TRACING.TraceEvent>>();
+
+                var threadIDFilter = new ThreadIDFilter(_pidUnderTest);
+                var ioFilter = new IOFilter(_pidUnderTest);
+                _filters = new Dictionary<Type, IEventFilter>
+                {
+                    { typeof(PARSERS.Kernel.CSwitchTraceData), new ThreadCSwitchFilter(_pidUnderTest) },
+                    { typeof(PARSERS.Kernel.ThreadTraceData), threadIDFilter },
+                    { typeof(PARSERS.Kernel.DiskIOInitTraceData), ioFilter},
+                    { typeof(PARSERS.Kernel.DiskIOTraceData), ioFilter},
+                    { typeof(PARSERS.Clr.MethodJittingStartedTraceData), threadIDFilter },
+                    { typeof(PARSERS.Clr.MethodLoadUnloadVerboseTraceData), threadIDFilter },
+                    { typeof(PARSERS.Clr.AssemblyLoadUnloadTraceData), threadIDFilter },
+                    // { typeof(PARSERS.DynamicManifestTraceEvent), new DynamicFilter(_pidUnderTest) }
+                    // Need to add ready thread filter
+                };
             }
 
             public SortedDictionary<double, List<TRACING.TraceEvent>>.ValueCollection Values
@@ -43,79 +60,53 @@ namespace MusicStore.ETWLogAnalyzer
                 }
             }
 
-            public Dictionary<int, SortedList<double, PARSERS.Kernel.CSwitchTraceData>> ContextSwitches
+            public Dictionary<int, SortedList<double, TRACING.TraceEvent>> ThreadSchedule
             {
                 get
                 {
-                    return _contextSwitches;
+                    return _threadSchedule;
                 }
             }
 
-            public List<TRACING.TraceEvent> CustomEvents
-            {
-                get
-                {
-                    return _customEvents;
-                }
-            }
-
+            /// <summary>
+            /// Stores the events relevant for the process under tracing.
+            /// </summary>
+            /// <param name="data"> Event parsed from the logs </param>
             internal void DiscardOrRecord(TRACING.TraceEvent data)
             {
-                //
-                // Record context switches to and from the process under test
-                // 
-                if(data is PARSERS.Kernel.CSwitchTraceData)
+                if (!_filters.TryGetValue(data.GetType(), out IEventFilter eventFilter))
                 {
-                    PARSERS.Kernel.CSwitchTraceData ev = (PARSERS.Kernel.CSwitchTraceData)data;
-
-                    int processorNumber = ev.ProcessorNumber;
-
-                    if(_contextSwitches.ContainsKey(processorNumber) == false)
-                    {
-                        _contextSwitches.Add(processorNumber, new SortedList<double, PARSERS.Kernel.CSwitchTraceData>()); 
-                    }
-
-                    var switches = _contextSwitches[processorNumber];
-
-                    if (switches.ContainsKey(data.TimeStampRelativeMSec))
-                    {
-                        switches[data.TimeStampRelativeMSec] = (PARSERS.Kernel.CSwitchTraceData)data.Clone();
-                    }
-                    else
-                    {
-                        switches.Add(data.TimeStampRelativeMSec, (PARSERS.Kernel.CSwitchTraceData)data.Clone());
-                    }
-                }
-                else if (data.ProviderName == "aspnet-JitBench-MusicStore")
-                {
-                    _customEvents.Add(data.Clone());
-                }
-
-                //
-                // Filter all other events and keep only the ones from the process under test
-                //
-                if (FilterProcessById(data, _pidUnderTest))
-                {
+                    // Return immediately if no filter exists.
+                    // TODO: Decide on either a default classifier (i.e. use ThreadID property)
+                    //       or throw an exception/log the problem and open API to register classifiers that
+                    //       implement IEventFilter.
                     return;
                 }
 
-                Record(data);
-            }
-            
-            private void Record(TRACING.TraceEvent ev)
-            {
-                List<TRACING.TraceEvent> events = null;
-                if (_events.TryGetValue(ev.TimeStampRelativeMSec, out events) == false)
+                if (eventFilter.IsRelevant(data, out int relevantThread))
                 {
-                    _events.Add(ev.TimeStampRelativeMSec, new List<TRACING.TraceEvent>());
+                    // Log into linear event timeline
+                    if (!_events.TryGetValue(data.TimeStampRelativeMSec, out List<TRACING.TraceEvent> events))
+                    {
+                        _events.Add(data.TimeStampRelativeMSec, new List<TRACING.TraceEvent>());
+                    }
+
+                    _events[data.TimeStampRelativeMSec].Add(data.Clone());
+
+                    // Log into per thread timeline
+                    if (!_threadSchedule.TryGetValue(relevantThread, out SortedList<double, TRACING.TraceEvent> relevantThreadTimeline))
+                    {
+                        _threadSchedule.Add(relevantThread, new SortedList<double, TRACING.TraceEvent>());
+                    }
+
+                    // Try to add the event to the timeline. If there's a time conflict try to add it at the next nanosecond.
+                    double time = data.TimeStampRelativeMSec;
+                    while (_threadSchedule[relevantThread].TryGetValue(time, out _))
+                    {
+                        time += 1e-6;
+                    }
+                    _threadSchedule[relevantThread].Add(time, data.Clone());
                 }
-
-                _events[ev.TimeStampRelativeMSec].Add((TRACING.TraceEvent)ev.Clone());
-            }
-
-            private static bool FilterProcessById(TRACING.TraceEvent ev, int pidUnderTest)
-            {
-                return ev.ProcessID != pidUnderTest;
             }
         }
 
@@ -128,7 +119,7 @@ namespace MusicStore.ETWLogAnalyzer
                     return x.CompareTo(y);
                 }
             }
-            
+
             private readonly ETWData _owner;
             private readonly double _begin;
             private readonly double _duration;
@@ -183,78 +174,67 @@ namespace MusicStore.ETWLogAnalyzer
                 return $"[ {_begin} , {_duration} ]";
             }
         }
-        
-        private List<TRACING.TraceEvent> _customEvents;
 
+        /// <summary>
+        /// Data holder for performance metrics querying
+        /// </summary>
+        /// <param name="data"> ProcessTraceData for the event under examination </param>
+        /// <param name="events"> ETWEventsHolder with the handled events </param>
         public ETWData(PARSERS.Kernel.ProcessTraceData data, ETWEventsHolder events)
         {
-            this.PidUnderTest = data.ProcessID;
-            this.TimeBase = data.TimeStampRelativeMSec;
+            PidUnderTest = data.ProcessID;
+            TimeBase = data.TimeStampRelativeMSec;
 
-            Analyze(events); 
+            Analyze(events);
         }
         
-        public List<TRACING.TraceEvent> CustomEvents
-        {
-            get
-            {
-                return _customEvents;
-            }
-        }
-
+        /// <summary>
+        /// Cache and preprocess necessary elements 
+        /// </summary>
+        /// <param name="events"> Container used to store elements </param>
         private void Analyze(ETWEventsHolder events)
         {
-            //
-            // Get ahold of all CTX switches and custom events
-            //
-            _contextSwitches = events.ContextSwitches;
-            _customEvents = events.CustomEvents;
+            _threadSchedule = events.ThreadSchedule;
 
-            Dictionary<int, ThreadEvent> threadStartEvents = new Dictionary<int, ThreadEvent>();
-
-            foreach (var list in events.Values)
+            foreach (var threadInfo in _threadSchedule)
             {
-                foreach (TRACING.TraceEvent ev in list)
-                {
-                    if (ev is PARSERS.Kernel.ThreadTraceData)
-                    {
-                        var ev1 = (PARSERS.Kernel.ThreadTraceData)ev;
+                int threadID = threadInfo.Key;
+                SortedList <double, TRACING.TraceEvent> threadEventList = threadInfo.Value;
 
-                        switch (ev1.Opcode)
-                        {
-                            case TRACING.TraceEventOpcode.Start:
-                                {
-                                    threadStartEvents.Add(ev1.ThreadID, new ThreadEvent(ev1));
+                // TODO: Determine if we really want to persist schedule. Could be generated in a lazy manner
+                //       as the per thread sorted event list renders this trivial.
+                // For a thread to exist, we must have found one element
+                Debug.Assert(threadEventList.Count > 0);
 
-                                    break;
-                                }
-                            case TRACING.TraceEventOpcode.Stop:
-                                {
-                                    Debug.Assert(threadStartEvents.ContainsKey(ev1.ThreadID));
+                double startTime = threadEventList.Values[0].TimeStampRelativeMSec;
+                double endTime = threadEventList.Values[threadEventList.Count - 1].TimeStampRelativeMSec;
+                _threadLifetimes.Add(threadID, new ETWTimeInterval(this, startTime, endTime));
 
-                                    var interval = new ETWTimeInterval(this, threadStartEvents[ev1.ThreadID].BeginTime, ev1.TimeStampRelativeMSec);
-
-                                    _schedule.Add(ev1.ThreadID, interval);
-
-                                    break;
-                                }
-                            default:
-                                Debug.Assert(false);
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        RecordRange(list);
-                    }
-                }
+                // RecordJit(eventList); -> generic method works better with predicate and linq -> getEvent(, predicate)
+                // TODO: Determine if we want to perform caching or separation of events. Could be done here.
             }
 
-            Debug.Assert(_threadEvents.Keys.Count == _schedule.Keys.Count); 
+            Debug.Assert(_threadSchedule.Keys.Count == _threadLifetimes.Keys.Count); 
         }
-        
+
         internal int PidUnderTest { get; private set; }
 
         internal double TimeBase { get; private set; }
+
+        /// <summary>
+        /// Get a dictionary of events relevant to a thread sorted by time using the thread number as key
+        /// </summary>
+        public Dictionary<int, SortedList<double, TRACING.TraceEvent>> ThreadSchedule => _threadSchedule;
+
+        /// <summary>
+        /// Returns a list of the threads used by the process.
+        /// </summary>
+        public Dictionary<int, SortedList<double, TRACING.TraceEvent>>.KeyCollection ThreadList
+        {
+            get
+            {
+                return _threadSchedule.Keys;
+            }
+        }
     }
 }

@@ -132,95 +132,25 @@ namespace MusicStore.ETWLogAnalyzer
             }
         }
 
-        private readonly Dictionary<int, ETWTimeInterval> _schedule = new Dictionary<int, ETWTimeInterval>();
-        private readonly Dictionary<int, List<TRACING.TraceEvent>> _threadEvents = new Dictionary<int, List<TRACING.TraceEvent>>();
-        private          Dictionary<int, SortedList<double, PARSERS.Kernel.CSwitchTraceData>>  _contextSwitches; 
-        private readonly Dictionary<int, SortedList<long,JitEvent>> _jitEvents = new Dictionary<int, SortedList<long,JitEvent>>();
+        private readonly Dictionary<int, ETWTimeInterval> _threadLifetimes = new Dictionary<int, ETWTimeInterval>();
+        private          Dictionary<int, SortedList<double, TRACING.TraceEvent>> _threadSchedule;
 
-        public Dictionary<int, ETWTimeInterval> Schedule
+        public Dictionary<int, ETWTimeInterval> ThreadLifeIntervals
         {
             get
             {
-                return _schedule;
+                return _threadLifetimes;
             }
         }
 
-        public Dictionary<int, List<TRACING.TraceEvent>> ThreadEvents
+        private SortedList<double, TRACING.TraceEvent> GetThreadList(int id)
         {
-            get
+            if (_threadSchedule.TryGetValue(id, out _) == false)
             {
-                return _threadEvents;
-            }
-        }
-
-        public Dictionary<int, SortedList<double, PARSERS.Kernel.CSwitchTraceData>> ContextSwitches
-        {
-            get
-            {
-                return _contextSwitches;
-            }
-        }
-
-        public Dictionary<int, SortedList<long,JitEvent>> JitEvents
-        {
-            get
-            {
-                return _jitEvents;
-            }
-        }
-        
-        private void RecordRange(List<TRACING.TraceEvent> range)
-        {
-            GetThreadList(range[0].ThreadID).AddRange(range);
-
-            foreach (var ev in range)
-            {
-                if (ev is PARSERS.Clr.MethodJittingStartedTraceData)
-                {
-                    var methodID = ((PARSERS.Clr.MethodJittingStartedTraceData)ev).MethodID;
-
-                    var threadList = GetJitThreadList(ev.ThreadID);
-
-                    if (threadList.ContainsKey(methodID) == false)
-                    {
-                        threadList.Add(methodID, new JitEvent((PARSERS.Clr.MethodJittingStartedTraceData)ev));
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Duplicated method ID: {methodID}"); 
-                    }
-                }
-                else if (ev is PARSERS.Clr.MethodLoadUnloadVerboseTraceData)
-                {
-                    var methodID = ((PARSERS.Clr.MethodLoadUnloadVerboseTraceData)ev).MethodID;
-
-                    var jit = GetJitThreadList(ev.ThreadID)[methodID];
-
-                    jit.Duration = ev.TimeStampRelativeMSec - jit.BeginTime;
-                }
-            }
-        }
-
-        private List<TRACING.TraceEvent> GetThreadList(int id)
-        {
-            List<TRACING.TraceEvent> events = null;
-            if (_threadEvents.TryGetValue(id, out events) == false)
-            {
-                _threadEvents.Add(id, new List<TRACING.TraceEvent>());
+                _threadSchedule.Add(id, new SortedList<double, TRACING.TraceEvent>());
             }
 
-            return _threadEvents[id];
-        }
-
-        private SortedList<long, JitEvent> GetJitThreadList(int id)
-        {
-            SortedList<long, JitEvent> events = null;
-            if (_jitEvents.TryGetValue(id, out events) == false)
-            {
-                _jitEvents.Add(id, new SortedList<long, JitEvent>());
-            }
-
-            return _jitEvents[id];
+            return _threadSchedule[id];
         }
     }
 }
