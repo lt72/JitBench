@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Collections.Generic;
+using System.Linq;
 
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
-
 
 namespace MusicStore.ETWLogAnalyzer
 {
@@ -132,25 +130,41 @@ namespace MusicStore.ETWLogAnalyzer
             }
         }
 
-        private readonly Dictionary<int, ETWTimeInterval> _threadLifetimes = new Dictionary<int, ETWTimeInterval>();
-        private          Dictionary<int, SortedList<double, TRACING.TraceEvent>> _threadSchedule;
+        /// <summary>
+        /// Get a dictionary of events relevant to a thread sorted by time using the thread number as key
+        /// </summary>
+        public Dictionary<int, SortedList<double, TRACING.TraceEvent>> ThreadSchedule { get => _threadSchedule; }
 
-        public Dictionary<int, ETWTimeInterval> ThreadLifeIntervals
+        /// <summary>
+        /// Returns a list of the threads used by the process.
+        /// </summary>
+        public Dictionary<int, SortedList<double, TRACING.TraceEvent>>.KeyCollection ThreadList { get => _threadSchedule.Keys; }
+
+        public Dictionary<int, ETWTimeInterval> ThreadLifeIntervals { get => _threadLifetimes; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="threadId"></param>
+        /// <returns></returns>
+        public List<ETWTimeInterval> GetActiveIntervalsForThread(int threadId)
         {
-            get
-            {
-                return _threadLifetimes;
-            }
-        }
+            var contextSwitchInList =
+                GetMatchingEventsForThread(
+                    threadId,
+                    (ev) => (ev is PARSERS.Kernel.CSwitchTraceData && (ev as PARSERS.Kernel.CSwitchTraceData).NewProcessID == PidUnderTest));
 
-        private SortedList<double, TRACING.TraceEvent> GetThreadList(int id)
-        {
-            if (_threadSchedule.TryGetValue(id, out _) == false)
-            {
-                _threadSchedule.Add(id, new SortedList<double, TRACING.TraceEvent>());
-            }
+            var contextSwitchOutList =
+                GetMatchingEventsForThread(
+                    threadId,
+                    (ev) => (ev is PARSERS.Kernel.CSwitchTraceData && (ev as PARSERS.Kernel.CSwitchTraceData).NewProcessID != PidUnderTest));
 
-            return _threadSchedule[id];
+            var activeIntervals = contextSwitchInList
+                        .Zip(contextSwitchOutList,
+                            (cSwitchIn, cSwitchOut) => new ETWTimeInterval(this, cSwitchIn.TimeStampRelativeMSec, cSwitchOut.TimeStampRelativeMSec))
+                        .ToList();
+
+            return activeIntervals;
         }
     }
 }
