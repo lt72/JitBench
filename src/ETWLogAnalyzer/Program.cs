@@ -4,7 +4,7 @@ using System.IO;
 
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
-
+using MusicStore.ETWLogAnalyzer.Reports;
 
 namespace MusicStore.ETWLogAnalyzer
 {
@@ -66,139 +66,152 @@ namespace MusicStore.ETWLogAnalyzer
             //
             // Now re-parse the log looking for the actual data we are interested in.
             //
-            var events = new ETWData.ETWEventsHolder(put.ProcessID);            
+            var events = new ETWData.ETWEventsHolder(put.ProcessID);
             using (var source = new TRACING.ETWTraceEventSource(etwLogFile))
             {
                 var id = put.ProcessID;
 
                 //
-                // Kernel Events
+                // Kernel events parser callbacks
                 //
-                PARSERS.KernelTraceEventParser kernelParser = source.Kernel;
+                { 
+                    PARSERS.KernelTraceEventParser kernelParser = source.Kernel;
 
-                //
-                // Kernel - Threading
-                //
+                    //
+                    // Kernel - Threading
+                    //
 
-                // Using only thread start and thread stop events. ThreadDC callbacks can be used 
-                // for permanent events if needed, but current collection methods only analyze transient
-                // processes, so it's unnecessary to consider these now.
-                kernelParser.ThreadStart += delegate (PARSERS.Kernel.ThreadTraceData data)
-                {
-                    events.DiscardOrRecord(data);
-                };
-
-                kernelParser.ThreadStop += delegate (PARSERS.Kernel.ThreadTraceData data)
-                {
-                    events.DiscardOrRecord(data);
-                };
-
-                kernelParser.ThreadCSwitch += delegate (PARSERS.Kernel.CSwitchTraceData data)
-                {
-                    events.DiscardOrRecord(data);
-                };
-
-                kernelParser.DispatcherReadyThread += delegate (PARSERS.Kernel.DispatcherReadyThreadTraceData data)
-                {
-                    events.DiscardOrRecord(data);
-                };
-
-                //
-                // Kernel - I/O
-                //
-
-                // File API's are ignored for now. We care about blocking I/O (where non-memory reads are necessary).
-                kernelParser.AddCallbackForEvents(delegate (PARSERS.Kernel.DiskIOTraceData data)
-                {
-                    events.DiscardOrRecord(data);
-                });
-
-                kernelParser.AddCallbackForEvents(delegate (PARSERS.Kernel.DiskIOInitTraceData data)
-                {
-                    events.DiscardOrRecord(data);
-                });
-
-
-                //
-                // DotNET Events
-                //
-                PARSERS.ClrTraceEventParser clrParser = source.Clr;
-                
-                //
-                // JIT Start and Stop
-                //
-
-                clrParser.MethodJittingStarted += delegate (PARSERS.Clr.MethodJittingStartedTraceData data)
-                {
-                    events.DiscardOrRecord(data);
-                };
-
-                clrParser.MethodLoadVerbose += delegate (PARSERS.Clr.MethodLoadUnloadVerboseTraceData data)
-                {
-                    // This is the actual "JIT finished" event!
-                    events.DiscardOrRecord(data);
-                };
-
-                //
-                // Loader
-                //
-                clrParser.LoaderModuleLoad += delegate (PARSERS.Clr.ModuleLoadUnloadTraceData data)
-                {
-                    events.DiscardOrRecord(data);
-                };
-
-                clrParser.LoaderModuleUnload += delegate (PARSERS.Clr.ModuleLoadUnloadTraceData data)
-                {
-                    events.DiscardOrRecord(data);
-                };
-
-                clrParser.LoaderAssemblyLoad += delegate (PARSERS.Clr.AssemblyLoadUnloadTraceData data)
-                {
-                    events.DiscardOrRecord(data);
-                };
-
-                clrParser.LoaderAssemblyUnload += delegate (PARSERS.Clr.AssemblyLoadUnloadTraceData data)
-                {
-                    events.DiscardOrRecord(data);
-                };
-
-                //
-                // Custom instrumentation 
-                //
-                PARSERS.DynamicTraceEventParser eventSourceParser = source.Dynamic;
-
-                eventSourceParser.All += delegate (TRACING.TraceEvent data)
-                {
-                    var name = data.ProviderName;
-
-                    if (name == "aspnet-JitBench-MusicStore")
+                    // Using only thread start and thread stop events. ThreadDC callbacks can be used 
+                    // for permanent events if needed, but current collection methods only analyze transient
+                    // processes, so it's unnecessary to consider these now.
+                    kernelParser.ThreadStart += delegate (PARSERS.Kernel.ThreadTraceData data)
                     {
-                        var a = data.GetType();
-                        events.DiscardOrRecord(data);
-                    }
-                };
+                        if (data.ProcessID == 4488)
+                            events.StoreIfRelevant(data);
+                    };
 
+                    kernelParser.ThreadStop += delegate (PARSERS.Kernel.ThreadTraceData data)
+                    {
+                        events.StoreIfRelevant(data);
+                    };
+
+                    kernelParser.ThreadCSwitch += delegate (PARSERS.Kernel.CSwitchTraceData data)
+                    {
+                        events.StoreIfRelevant(data);
+                    };
+
+                    kernelParser.DispatcherReadyThread += delegate (PARSERS.Kernel.DispatcherReadyThreadTraceData data)
+                    {
+                        events.StoreIfRelevant(data);
+                    };
+
+                    //
+                    // Kernel - I/O
+                    //
+
+                    // File API's are ignored for now. We care about blocking I/O (where non-memory reads are necessary).
+                    kernelParser.AddCallbackForEvents(delegate (PARSERS.Kernel.DiskIOTraceData data)
+                    {
+                        events.StoreIfRelevant(data);
+                    });
+
+                    kernelParser.AddCallbackForEvents(delegate (PARSERS.Kernel.DiskIOInitTraceData data)
+                    {
+                        events.StoreIfRelevant(data);
+                    });
+                }
+
+                //
+                // DotNET events parser callbacks
+                //
+                {
+                    PARSERS.ClrTraceEventParser clrParser = source.Clr;
+
+                    //
+                    // Thread creating
+                    //
+                    clrParser.ThreadCreating += delegate (PARSERS.Clr.ThreadStartWorkTraceData data)
+                    {
+                        events.StoreIfRelevant(data);
+                    };
+
+                    //
+                    // JIT Start and Stop
+                    //
+                    clrParser.MethodJittingStarted += delegate (PARSERS.Clr.MethodJittingStartedTraceData data)
+                    {
+                        events.StoreIfRelevant(data);
+                    };
+
+                    clrParser.MethodLoadVerbose += delegate (PARSERS.Clr.MethodLoadUnloadVerboseTraceData data)
+                    {
+                        events.StoreIfRelevant(data);
+                    };
+
+                    //
+                    // Loader - Assemblies and modules
+                    //
+                    clrParser.LoaderModuleLoad += delegate (PARSERS.Clr.ModuleLoadUnloadTraceData data)
+                    {
+                        events.StoreIfRelevant(data);
+                    };
+
+                    clrParser.LoaderModuleUnload += delegate (PARSERS.Clr.ModuleLoadUnloadTraceData data)
+                    {
+                        events.StoreIfRelevant(data);
+                    };
+
+                    clrParser.LoaderAssemblyLoad += delegate (PARSERS.Clr.AssemblyLoadUnloadTraceData data)
+                    {
+                        events.StoreIfRelevant(data);
+                    };
+
+                    clrParser.LoaderAssemblyUnload += delegate (PARSERS.Clr.AssemblyLoadUnloadTraceData data)
+                    {
+                        events.StoreIfRelevant(data);
+                    };
+
+                    //
+                    // Custom instrumentation 
+                    //
+                    PARSERS.DynamicTraceEventParser eventSourceParser = source.Dynamic;
+
+                    eventSourceParser.All += delegate (TRACING.TraceEvent data)
+                    {
+                        var name = data.ProviderName;
+
+                        if (name == "aspnet-JitBench-MusicStore")
+                        {
+                            events.StoreIfRelevant(data);
+                        }
+                    };
+                }
+                
                 //
                 // Process log
                 //
                 source.Process();
             }
-
-            // ~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~ //
-            // ~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~ //
-            // ~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~o~~~ //
-
+            
             //
             // Generate some reports
             //
 
             Console.WriteLine("...Generating reports...");
             var etwData = new ETWData(put, events);
+            
+            string baseFolder = Environment.ExpandEnvironmentVariables(CmdLine.Arguments[CmdLine.OutputPathSwitch].Value);
+            baseFolder = baseFolder.EndsWith(value: @"\") ? baseFolder.Substring(0, baseFolder.Length - 1) : baseFolder;
+
+            // LORENZO-TODO: add system call to discover the quantum time or find dynamically
+            new ThreadStatistics().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(@baseFolder + @"\thread_quantum_stats.txt"), true);
 
             Console.WriteLine("...done!");
 
             return 0;
         }
+
+        // Helpers
 
         private static string Normalize(string name)
         {
