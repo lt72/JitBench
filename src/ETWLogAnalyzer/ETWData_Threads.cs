@@ -152,12 +152,14 @@ namespace MusicStore.ETWLogAnalyzer
             var contextSwitchInList =
                 GetMatchingEventsForThread(
                     threadId,
-                    (ev) => (ev is PARSERS.Kernel.CSwitchTraceData && (ev as PARSERS.Kernel.CSwitchTraceData).NewProcessID == PidUnderTest));
+                    (ev) => (ev is PARSERS.Kernel.CSwitchTraceData && (ev as PARSERS.Kernel.CSwitchTraceData).ThreadID == threadId));
 
             var contextSwitchOutList =
                 GetMatchingEventsForThread(
                     threadId,
-                    (ev) => (ev is PARSERS.Kernel.CSwitchTraceData && (ev as PARSERS.Kernel.CSwitchTraceData).NewProcessID != PidUnderTest));
+                    (ev) => (ev is PARSERS.Kernel.CSwitchTraceData && (ev as PARSERS.Kernel.CSwitchTraceData).ThreadID != threadId));
+
+            System.Diagnostics.Debug.Assert(contextSwitchInList.Count == contextSwitchOutList.Count);
 
             var activeIntervals = contextSwitchInList
                         .Zip(contextSwitchOutList,

@@ -52,7 +52,6 @@
     <Compile Include="CmdLine.cs" />
     <Compile Include="ETWData_Threads.cs" />
     <Compile Include="ETWData.cs" />
-    <Compile Include="EventFilters\DynamicFilter.cs" />
     <Compile Include="EventFilters\EventFilterBase.cs" />
     <Compile Include="EventFilters\ThreadIDFilter.cs" />
     <Compile Include="EventFilters\IOFilter.cs" />
