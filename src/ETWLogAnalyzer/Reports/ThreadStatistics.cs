@@ -39,8 +39,6 @@ namespace MusicStore.ETWLogAnalyzer.Reports
         {
             foreach (int threadId in data.ThreadList)
             {
-                if (threadId == 15344)
-                    System.Diagnostics.Debug.Assert(true);
                 var threadQuantumStatistics = new ThreadQuantumInfo();
                 List<ETWData.ETWTimeInterval> activeIntervals = data.GetActiveIntervalsForThread(threadId);
                 threadQuantumStatistics.IntervalCount = activeIntervals.Count;
