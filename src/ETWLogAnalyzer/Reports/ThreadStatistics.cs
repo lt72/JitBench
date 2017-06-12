@@ -19,6 +19,7 @@ namespace MusicStore.ETWLogAnalyzer.Reports
             public double MinQuantumTimeUsage = Double.MaxValue;
             public double MaxQuantumTimeUsage = Double.MinValue;
             public double QuantumEfficiency => TotalActiveTime / (IntervalCount * QuantumLength);
+            public double Lifetime = 0;
         }
 
         // LORENZO-TODO: consider moving this to ThreadQuantumInfo or make it a singleton
@@ -38,9 +39,12 @@ namespace MusicStore.ETWLogAnalyzer.Reports
         {
             foreach (int threadId in data.ThreadList)
             {
+                if (threadId == 15344)
+                    System.Diagnostics.Debug.Assert(true);
                 var threadQuantumStatistics = new ThreadQuantumInfo();
                 List<ETWData.ETWTimeInterval> activeIntervals = data.GetActiveIntervalsForThread(threadId);
                 threadQuantumStatistics.IntervalCount = activeIntervals.Count;
+                threadQuantumStatistics.Lifetime = data.ThreadLifeIntervals[threadId].Duration;
 
                 foreach (var interval in activeIntervals)
                 {
@@ -57,6 +61,7 @@ namespace MusicStore.ETWLogAnalyzer.Reports
         public override void Persist(TextReportWriter writer, bool dispose)
         {
             writer.WriteTitle("Thread Usage");
+            writer.Write($"\nThe process used {_threadQuantumInfoList.Count} thread(s) as follows:");
 
             foreach(var threadInfo in _threadQuantumInfoList)
             {
@@ -66,7 +71,8 @@ namespace MusicStore.ETWLogAnalyzer.Reports
                 var quantumStats = threadInfo.Value;
                 var formatString = "{0, -30}:\t{1,9}";
                 writer.WriteLine(String.Format(formatString, "Intervals", quantumStats.IntervalCount));
-                writer.WriteLine(String.Format(formatString, "Total active time", quantumStats.TotalActiveTime));
+                writer.WriteLine(String.Format(formatString, "Nominal running time", quantumStats.Lifetime));
+                writer.WriteLine(String.Format(formatString, "Effective running time", quantumStats.TotalActiveTime));
                 writer.WriteLine(String.Format(formatString, "Average active thread time", quantumStats.AverageActiveThreadTime));
                 writer.WriteLine(String.Format(formatString, "Min time used", quantumStats.MinQuantumTimeUsage));
                 writer.WriteLine(String.Format(formatString, "Max time Used", quantumStats.MaxQuantumTimeUsage));
