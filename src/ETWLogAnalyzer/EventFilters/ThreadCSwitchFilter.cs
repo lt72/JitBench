@@ -1,5 +1,6 @@
 ﻿using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
+using System.Collections.Generic;
 
 namespace MusicStore.ETWLogAnalyzer.EventFilters
 {
@@ -12,19 +13,22 @@ namespace MusicStore.ETWLogAnalyzer.EventFilters
             _pid = pid;
         }
 
-        bool IEventFilter.IsRelevant(TRACING.TraceEvent ev, out int relevantThread)
+        bool IEventFilter.IsRelevant(TRACING.TraceEvent ev, out List<int> relevantThreadList)
         {
             var castEvent = ev as PARSERS.Kernel.CSwitchTraceData;
-            
+            relevantThreadList = new List<int>();
+
             if (castEvent.NewProcessID == _pid) // Our process gets switched in.
             {
-                relevantThread = castEvent.NewThreadID;
-                return true;
+                relevantThreadList.Add(castEvent.NewThreadID);
             }
 
-            // We assign the out thread, and determine if the relevant process is switched out.
-            relevantThread = castEvent.OldThreadID; 
-            return castEvent.OldProcessID == _pid;  
+            if (castEvent.OldProcessID == _pid)
+            {
+                relevantThreadList.Add(castEvent.OldThreadID);
+            }
+
+            return relevantThreadList.Count > 0;  
         }
     }
 }

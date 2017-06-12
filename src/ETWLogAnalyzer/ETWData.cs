@@ -73,14 +73,18 @@ namespace MusicStore.ETWLogAnalyzer
                     eventFilter = new ThreadIDFilter(_pidUnderTest);
                 }
 
-                if (eventFilter.IsRelevant(data, out int relevantThread))
+                if (eventFilter.IsRelevant(data, out List<int> relevantThreadList))
                 {
                     TRACING.TraceEvent eventCopy = data.Clone();
+
                     // Log into linear event timeline
                     AddUniqueTime(_events, data);
 
                     // Log into per thread timeline
-                    AddUniqueTime(GetThreadTimeline(relevantThread), data);
+                    foreach (var relevantThread in relevantThreadList)
+                    {
+                        AddUniqueTime(GetThreadTimeline(relevantThread), data);
+                    }
                 }
             }
 
@@ -208,17 +212,12 @@ namespace MusicStore.ETWLogAnalyzer
                 int threadID = threadInfo.Key;
                 SortedList <double, TRACING.TraceEvent> threadEventList = threadInfo.Value;
 
-                // TODO: Determine if we really want to persist schedule. Could be generated in a lazy manner
-                //       as the per thread sorted event list renders this trivial.
-                // For a thread to exist, we must have found one element
+                // For a thread to exist, we must have found one element in the queue.
                 Debug.Assert(threadEventList.Count > 0);
 
                 double startTime = threadEventList.Values[0].TimeStampRelativeMSec;
                 double endTime = threadEventList.Values[threadEventList.Count - 1].TimeStampRelativeMSec;
                 _threadLifetimes.Add(threadID, new ETWTimeInterval(this, startTime, endTime));
-
-                // RecordJit(eventList); -> generic method works better with predicate and linq -> getEvent(, predicate)
-                // TODO: Determine if we want to perform caching or separation of events. Could be done here.
             }
 
             Debug.Assert(_threadSchedule.Keys.Count == _threadLifetimes.Keys.Count); 
