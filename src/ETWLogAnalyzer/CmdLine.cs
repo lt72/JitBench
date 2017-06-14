@@ -87,12 +87,18 @@ namespace MusicStore.ETWLogAnalyzer
         internal static readonly string EtwLogDescription = "name of the ETW log file to analyze";
         internal static readonly string EtwLogDefault = "." + Path.DirectorySeparatorChar + "PerfViewData.etl.zip";
         //--//
+        internal static readonly string OutputPathSwitch = "/out-dir";
+        internal static readonly string OutputPathExample = "Path (absolute, relative, or environment variable) to store reports to.";
+        internal static readonly string OutputPathDescription = "path to store the log files in";
+        internal static readonly string OutputPathDefault = "%TEMP%";
 
         static CmdLine()
         {
             Arguments.Add(HelpSwitch, Argument.New(HelpSwitch, String.Empty, HelpDescription, String.Empty, String.Empty));
             Arguments.Add(EtwLogSwitch, Argument.New(EtwLogSwitch, EtwLogExample, EtwLogDescription, EtwLogDefault, EtwLogDefault));
             Arguments.Add(PUTSwitch, Argument.New(PUTSwitch, PUTExample, PUTDescription, PUTDefault, PUTDefault));
+            Arguments.Add(OutputPathSwitch, 
+                Argument.New(OutputPathSwitch, OutputPathExample, OutputPathDescription, OutputPathDefault, OutputPathDefault));
         }
 
         internal static Cmd Process(string[] args)
