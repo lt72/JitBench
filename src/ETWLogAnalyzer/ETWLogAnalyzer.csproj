@@ -50,14 +50,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CmdLine.cs" />
-    <Compile Include="ETWData_Threads.cs" />
-    <Compile Include="ETWData.cs" />
+    <Compile Include="ETWData\ETWData_Jit.cs" />
+    <Compile Include="ETWData\ETWData_Threads.cs" />
+    <Compile Include="ETWData\ETWData.cs" />
     <Compile Include="EventFilters\EventFilterBase.cs" />
     <Compile Include="EventFilters\ThreadIDFilter.cs" />
     <Compile Include="EventFilters\IOFilter.cs" />
     <Compile Include="EventFilters\ThreadCSwitchFilter.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Reports\JitStatistics.cs" />
     <Compile Include="Reports\ReportBase.cs" />
     <Compile Include="Reports\ThreadStatistics.cs" />
     <Compile Include="ReportWriters\TextReportWriter.cs" />

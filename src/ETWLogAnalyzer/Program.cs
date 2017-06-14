@@ -205,6 +205,7 @@ namespace MusicStore.ETWLogAnalyzer
 
             // LORENZO-TODO: add system call to discover the quantum time or find dynamically
             new ThreadStatistics().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(@baseFolder + @"\thread_quantum_stats.txt"), true);
+            new JitStatistics().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(baseFolder + @"\jit_statistics.txt"), true);
 
             Console.WriteLine("...done!");
 

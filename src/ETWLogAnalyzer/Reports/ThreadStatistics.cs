@@ -67,14 +67,14 @@ namespace MusicStore.ETWLogAnalyzer.Reports
 
                 writer.AddIndentationLevel();
                 var quantumStats = threadInfo.Value;
-                var formatString = "{0, -30}:\t{1,9}";
-                writer.WriteLine(String.Format(formatString, "Intervals", quantumStats.IntervalCount));
-                writer.WriteLine(String.Format(formatString, "Nominal running time", quantumStats.Lifetime));
-                writer.WriteLine(String.Format(formatString, "Effective running time", quantumStats.TotalActiveTime));
-                writer.WriteLine(String.Format(formatString, "Average active thread time", quantumStats.AverageActiveThreadTime));
-                writer.WriteLine(String.Format(formatString, "Min time used", quantumStats.MinQuantumTimeUsage));
-                writer.WriteLine(String.Format(formatString, "Max time Used", quantumStats.MaxQuantumTimeUsage));
-                writer.WriteLine(String.Format(formatString + " %", "Quantum Efficiency", quantumStats.QuantumEfficiency * 100));
+                var formatString = "{0, -35}:\t{1,9}";
+                writer.WriteLine(String.Format(formatString, "Intervals [-]", quantumStats.IntervalCount));
+                writer.WriteLine(String.Format(formatString, "Nominal running time [ms]", quantumStats.Lifetime));
+                writer.WriteLine(String.Format(formatString, "Effective running time [ms]", quantumStats.TotalActiveTime));
+                writer.WriteLine(String.Format(formatString, "Average active thread time [ms]", quantumStats.AverageActiveThreadTime));
+                writer.WriteLine(String.Format(formatString, "Min time used [ms]", quantumStats.MinQuantumTimeUsage));
+                writer.WriteLine(String.Format(formatString, "Max time Used [ms]", quantumStats.MaxQuantumTimeUsage));
+                writer.WriteLine(String.Format(formatString, "Quantum Efficiency [%]", quantumStats.QuantumEfficiency * 100));
                 writer.RemoveIndentationLevel();
             }
 

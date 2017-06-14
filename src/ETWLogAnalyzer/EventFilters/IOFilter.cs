@@ -29,7 +29,7 @@ namespace MusicStore.ETWLogAnalyzer.EventFilters
                 // Remember the thread that started the request
                 _IRPToThread[ioStartEv.Irp] = ioStartEv.ThreadID;
                 relevantThreadList.Add(ioStartEv.ThreadID);
-                return ioStartEv.ProcessID == _pidUnderTest && ioStartEv.Opcode == READ_INIT;
+                return ioStartEv.ProcessID == _pidUnderTest;
             }
             else if (ev is PARSERS.Kernel.DiskIOTraceData ioFinishEv)
             {
@@ -46,7 +46,7 @@ namespace MusicStore.ETWLogAnalyzer.EventFilters
                     relevantThreadId = ioFinishEv.ThreadID;
                 }
                 relevantThreadList.Add(relevantThreadId);
-                return ioFinishEv.ProcessID == _pidUnderTest && ioFinishEv.Opcode == READ;
+                return ioFinishEv.ProcessID == _pidUnderTest;
             }
 
             // This means we passed a non io event to this filter...

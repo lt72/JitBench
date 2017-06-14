@@ -32,8 +32,11 @@ REM .\Dotnet-Install.ps1 -InstallDir .dotnet -Architecture x64
 pushd src\MusicStore
 ..\..\.dotnet\dotnet restore
 ..\..\.dotnet\dotnet publish -c Release
+copy \\clrmain\tools\x86\xppurge.exe .
+xppurge.exe -empty
 pushd bin\Release\netcoreapp2.0\publish
-REM..\..\..\..\..\..\.dotnet\dotnet MusicStore.dll
-\\clrmain\tools\PerfView.exe /NoGui /NoView /ClrEvents:%DOTNET_EVENTS% /KernelEvents:%KERNEL_EVENTS% /Providers:*aspnet-JitBench-MusicStore -Zip:FALSE run ..\..\..\..\..\..\.dotnet\dotnet MusicStore.dll
+REM ..\..\..\..\..\..\.dotnet\dotnet.exe MusicStore.dll
+copy \\clrmain\tools\PerfView.exe .
+PerfView.exe /NoGui /NoView /ClrEvents:%DOTNET_EVENTS% /KernelEvents:%KERNEL_EVENTS% /Providers:*aspnet-JitBench-MusicStore /Zip:FALSE run ..\..\..\..\..\..\.dotnet\dotnet.exe MusicStore.dll
 popd
 popd

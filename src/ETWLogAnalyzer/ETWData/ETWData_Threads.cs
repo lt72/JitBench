@@ -67,68 +67,6 @@ namespace MusicStore.ETWLogAnalyzer
                 }
             }
         }
-        
-        internal class JitEvent : ThreadEvent
-        {
-            internal class JitDurationComparer : IComparer<JitEvent>
-            {
-                public int Compare(JitEvent x, JitEvent y)
-                {
-                    //
-                    // Reverse order, longest to shortest
-                    //
-                    if (x.Duration > y.Duration)
-                    {
-                        return -1;
-                    }
-                    else if (x.Duration < y.Duration)
-                    {
-                        return 1;
-                    }
-
-                    return 0;
-                }
-            }
-
-            internal JitEvent(PARSERS.Clr.MethodJittingStartedTraceData etwData) : base(etwData)
-            {
-            }
-
-            internal int MethodToken
-            {
-                get
-                {
-                    var jit = (PARSERS.Clr.MethodJittingStartedTraceData)Data;
-
-                    return jit.MethodToken;
-                }
-            }
-
-            internal string MethodName
-            {
-                get
-                {
-                    var jit = (PARSERS.Clr.MethodJittingStartedTraceData)Data;
-
-                    return jit.MethodName;
-                }
-            }
-
-            internal string FullyQualifiedMethodName
-            {
-                get
-                {
-                    var jit = (PARSERS.Clr.MethodJittingStartedTraceData)Data;
-
-                    return $"{jit.MethodNamespace}::{jit.MethodName}";
-                }
-            }
-            
-            public override string ToString()
-            {
-                return $"{FullyQualifiedMethodName}: @{BeginTime} for {Duration}";
-            }
-        }
 
         /// <summary>
         /// Get a dictionary of events relevant to a thread sorted by time using the thread number as key
@@ -152,12 +90,12 @@ namespace MusicStore.ETWLogAnalyzer
             var contextSwitchInList =
                 GetMatchingEventsForThread(
                     threadId,
-                    (ev) => (ev is PARSERS.Kernel.CSwitchTraceData && (ev as PARSERS.Kernel.CSwitchTraceData).ThreadID == threadId));
+                    (ev) => (ev is PARSERS.Kernel.CSwitchTraceData && (ev as PARSERS.Kernel.CSwitchTraceData).NewThreadID == threadId));
 
             var contextSwitchOutList =
                 GetMatchingEventsForThread(
                     threadId,
-                    (ev) => (ev is PARSERS.Kernel.CSwitchTraceData && (ev as PARSERS.Kernel.CSwitchTraceData).ThreadID != threadId));
+                    (ev) => (ev is PARSERS.Kernel.CSwitchTraceData && (ev as PARSERS.Kernel.CSwitchTraceData).NewThreadID != threadId));
 
             System.Diagnostics.Debug.Assert(contextSwitchInList.Count == contextSwitchOutList.Count);
 
