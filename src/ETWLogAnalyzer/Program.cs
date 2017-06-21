@@ -4,6 +4,7 @@ using System.IO;
 
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
+using MusicStore.ETWLogAnalyzer.Reports;
 
 namespace MusicStore.ETWLogAnalyzer
 {
@@ -77,13 +78,13 @@ namespace MusicStore.ETWLogAnalyzer
             baseFolder = baseFolder.EndsWith(value: @"\") ? baseFolder.Substring(0, baseFolder.Length - 1) : baseFolder;
 
             // LORENZO-TODO: add system call to discover the quantum time or find dynamically
-            //new ThreadStatistics().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(@baseFolder + @"\thread_quantum_stats.txt"), true);
+            new ThreadStatistics().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(@baseFolder + @"\thread_quantum_stats.txt"), true);
             //new JitStatistics().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(baseFolder + @"\jit_statistics.txt"), true);
         }
 
         private static Helpers.ETWEventsHolder FilterRelevantEvents(PARSERS.Kernel.ProcessTraceData put)
         {
-            var events = new ETWData.ETWEventsHolder(put.ProcessID);
+            var events = new Helpers.ETWEventsHolder(put.ProcessID);
             using (var source = new TRACING.ETWTraceEventSource(CmdLine.Arguments[CmdLine.EtwLogSwitch].Value))
             {
                 // Kernel events

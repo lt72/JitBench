@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using TRACING = Microsoft.Diagnostics.Tracing;
 
-namespace MusicStore.ETWLogAnalyzer.EventFilters
+namespace MusicStore.ETWLogAnalyzer.AbstractBases
 {
     public interface IEventFilter
     {

@@ -1,78 +1,74 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 using MusicStore.ETWLogAnalyzer.ReportWriters;
+using MusicStore.ETWLogAnalyzer.AbstractBases;
+using MusicStore.ETWLogAnalyzer.ReportVisitors;
 
 namespace MusicStore.ETWLogAnalyzer.Reports
 {
     internal class ThreadStatistics : ReportBase
     {
-        private class ThreadQuantumInfo
+        private class MethodQuantumInfo
         {
-            public int IntervalCount = 0;
-            public double TotalActiveTime = 0;
-            public double AverageActiveThreadTime => TotalActiveTime / IntervalCount;
-            public double MinQuantumTimeUsage = Double.MaxValue;
-            public double MaxQuantumTimeUsage = Double.MinValue;
-            public double QuantumEfficiency => TotalActiveTime / (IntervalCount * QuantumLength);
-            public double Lifetime = 0;
+            public double JitTimeUsed { get; private set; }
+            public double AvailableQuantumTime { get; private set; }
+
+            public MethodQuantumInfo(double jitTime, double quantumTime)
+            {
+                JitTimeUsed = jitTime;
+                AvailableQuantumTime = quantumTime;
+            }
         }
 
-        // LORENZO-TODO: consider moving this to ThreadQuantumInfo or make it a singleton
-        static internal double QuantumLength { get; private set; }
-
-        private readonly Dictionary<int, ThreadQuantumInfo> _threadQuantumInfoList;
-            
-        public ThreadStatistics(double quantumLength = Double.MinValue)
+        private Dictionary<int, Dictionary<ETWData.MethodUniqueIdentifier, MethodQuantumInfo>> _methodJistStatsPerThread;
+                
+        public ThreadStatistics()
         {
-            QuantumLength = quantumLength != Double.MinValue ? quantumLength : 20;
-
             // LORENZO-TODO: consider makign 'int' (threadID) a value type (struct)  struct ThreadId { public uint64 Id; } and use top 32 bits to disambiguate...
-            _threadQuantumInfoList = new Dictionary<int, ThreadQuantumInfo>();
+            _methodJistStatsPerThread = new Dictionary<int, Dictionary<ETWData.MethodUniqueIdentifier, MethodQuantumInfo>>();
         }
 
         public override ReportBase Analyze(ETWData data)
         {
-            foreach (int threadId in data.ThreadList)
+            foreach (int threadId in data.GetThreadList())
             {
-                var threadQuantumStatistics = new ThreadQuantumInfo();
-                List<ETWData.ETWTimeInterval> activeIntervals = data.GetActiveIntervalsForThread(threadId);
-                threadQuantumStatistics.IntervalCount = activeIntervals.Count;
-                threadQuantumStatistics.Lifetime = data.ThreadLifeIntervals[threadId].Duration;
+                var jitTimeVisitor = new JitTimeAccumulatorVisitor(threadId);
+                var availableQuantumTimeVisitor = new AvailableQuantumAccumulatorVisitor(threadId);
+                Controller.RunVisitorForResult(jitTimeVisitor, data.GetThreadTimeline(threadId));
+                Controller.RunVisitorForResult(availableQuantumTimeVisitor, data.GetThreadTimeline(threadId));
 
-                foreach (var interval in activeIntervals)
-                {
-                    threadQuantumStatistics.TotalActiveTime += interval.Duration;
-                    threadQuantumStatistics.MinQuantumTimeUsage = Math.Min(threadQuantumStatistics.MinQuantumTimeUsage, interval.Duration);
-                    threadQuantumStatistics.MaxQuantumTimeUsage = Math.Max(threadQuantumStatistics.MaxQuantumTimeUsage, interval.Duration);
-                }
+                System.Diagnostics.Debug.Assert(jitTimeVisitor.State != EventVisitor<Dictionary<ETWData.MethodUniqueIdentifier, double>>.VisitorState.Error
+                    && availableQuantumTimeVisitor.State != EventVisitor<Dictionary<ETWData.MethodUniqueIdentifier, double>>.VisitorState.Error);
 
-                _threadQuantumInfoList.Add(threadId, threadQuantumStatistics);
+                var jitTimeUsedPerMethod = jitTimeVisitor.Result;
+                var availableJitTimePerMethod = jitTimeVisitor.Result;
+
+                var quantumStatsPerMethod = ZipResults(jitTimeUsedPerMethod, availableJitTimePerMethod);
+
+                _methodJistStatsPerThread.Add(threadId, quantumStatsPerMethod);
             }
             return this;
         }
 
         public override void Persist(TextReportWriter writer, bool dispose)
         {
-            writer.WriteTitle("Thread Usage");
-            writer.Write($"\nThe process used {_threadQuantumInfoList.Count} thread(s) as follows:");
+            writer.WriteTitle("Thread Usage with Respect to Jitting");
+            writer.Write($"\nThe process used {_methodJistStatsPerThread.Count} thread(s) as follows:");
 
-            foreach(var threadInfo in _threadQuantumInfoList)
+            foreach(var threadInfo in _methodJistStatsPerThread)
             {
-                writer.WriteHeader("Thread " + threadInfo.Key.ToString());
+                writer.WriteHeader("Thread " + threadInfo.Key);
 
                 writer.AddIndentationLevel();
-                var quantumStats = threadInfo.Value;
+                (double threadJitTime, double threadQuantumJitTime) = AccumulateMethodTimes(threadInfo.Value);
+
                 var formatString = "{0, -35}:\t{1,9}";
-                writer.WriteLine(String.Format(formatString, "Intervals [-]", quantumStats.IntervalCount));
-                writer.WriteLine(String.Format(formatString, "Nominal running time [ms]", quantumStats.Lifetime));
-                writer.WriteLine(String.Format(formatString, "Effective running time [ms]", quantumStats.TotalActiveTime));
-                writer.WriteLine(String.Format(formatString, "Average active thread time [ms]", quantumStats.AverageActiveThreadTime));
-                writer.WriteLine(String.Format(formatString, "Min time used [ms]", quantumStats.MinQuantumTimeUsage));
-                writer.WriteLine(String.Format(formatString, "Max time Used [ms]", quantumStats.MaxQuantumTimeUsage));
-                writer.WriteLine(String.Format(formatString, "Quantum Efficiency [%]", quantumStats.QuantumEfficiency * 100));
+                writer.WriteLine(String.Format(formatString, "Nominal jitting time [ms]", threadJitTime));
+                writer.WriteLine(String.Format(formatString, "Available quantum time [ms]", threadQuantumJitTime));
+                var efficiency = (threadQuantumJitTime == 0) ? 100 : threadJitTime / threadQuantumJitTime * 100;
+                writer.WriteLine(String.Format(formatString, "Quantum Efficiency [%]", efficiency));
                 writer.RemoveIndentationLevel();
             }
 
@@ -80,6 +76,27 @@ namespace MusicStore.ETWLogAnalyzer.Reports
             {
                 writer.Dispose();
             }
+        }
+
+        // Helpers
+
+        private (double, double) AccumulateMethodTimes(Dictionary<ETWData.MethodUniqueIdentifier, MethodQuantumInfo> threadMethodJitTimes)
+        {
+            double threadJitTime = threadMethodJitTimes.Values.Aggregate(0.0, (accumulator, value) => accumulator + value.JitTimeUsed);
+            double threadQuantumJitTime = threadMethodJitTimes.Values.Aggregate(0.0, (accumulator, value) => accumulator + value.AvailableQuantumTime);
+            return (threadJitTime, threadQuantumJitTime);
+        }
+
+        private Dictionary<ETWData.MethodUniqueIdentifier, MethodQuantumInfo> ZipResults(
+            Dictionary<ETWData.MethodUniqueIdentifier, double> jitTimeUsedPerMethod,
+            Dictionary<ETWData.MethodUniqueIdentifier, double> availableJitTimePerMethod)
+        {
+            return (from methodUniqueId in jitTimeUsedPerMethod.Keys
+                    let jitTime = jitTimeUsedPerMethod[methodUniqueId]
+                    let quantumTime = availableJitTimePerMethod[methodUniqueId]
+                    select new KeyValuePair<ETWData.MethodUniqueIdentifier, MethodQuantumInfo>(
+                        methodUniqueId,
+                        new MethodQuantumInfo(jitTime, quantumTime))).ToDictionary(x => x.Key, x => x.Value);
         }
     }
 }

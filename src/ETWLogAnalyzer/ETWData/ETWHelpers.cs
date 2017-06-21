@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 using MusicStore.ETWLogAnalyzer.EventFilters;
+using MusicStore.ETWLogAnalyzer.AbstractBases;
 
 namespace MusicStore.ETWLogAnalyzer.Helpers
 {
@@ -88,8 +89,7 @@ namespace MusicStore.ETWLogAnalyzer.Helpers
 
         private SortedList<double, TRACING.TraceEvent> GetThreadTimeline(int relevantThread)
         {
-            SortedList<double, TRACING.TraceEvent> relevantThreadTimeline;
-            if (!_threadSchedule.TryGetValue(relevantThread, out relevantThreadTimeline))
+            if (!_threadSchedule.TryGetValue(relevantThread, out SortedList<double, TRACING.TraceEvent> relevantThreadTimeline))
             {
                 relevantThreadTimeline = new SortedList<double, TRACING.TraceEvent>();
                 _threadSchedule.Add(relevantThread, relevantThreadTimeline);

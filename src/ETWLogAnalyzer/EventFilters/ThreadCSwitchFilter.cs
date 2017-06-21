@@ -1,6 +1,7 @@
-﻿using TRACING = Microsoft.Diagnostics.Tracing;
+﻿using System.Collections.Generic;
+using MusicStore.ETWLogAnalyzer.AbstractBases;
+using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
-using System.Collections.Generic;
 
 namespace MusicStore.ETWLogAnalyzer.EventFilters
 {

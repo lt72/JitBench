@@ -1,9 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace MusicStore.ETWLogAnalyzer.ReportWriters
 {
-    public class TextReportWriter : IDisposable
+    internal class TextReportWriter : IDisposable
     {
         private readonly TextWriter _stream;
         private int _intendationOffset;

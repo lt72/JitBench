@@ -1,8 +1,7 @@
-﻿using System.IO;
-
-namespace MusicStore.ETWLogAnalyzer
+﻿
+namespace MusicStore.ETWLogAnalyzer.AbstractBases
 {
-    internal abstract class ReportBase 
+    public abstract class ReportBase 
     {
         protected ReportBase()
         {

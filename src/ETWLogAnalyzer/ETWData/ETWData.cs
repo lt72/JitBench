@@ -11,11 +11,23 @@ namespace MusicStore.ETWLogAnalyzer
 {
     public class ETWData
     {
+        public class MethodUniqueIdentifier
+        {
+            public long MethodId { get; private set; }
+            public string FullyQualifiedName { get; private set; }
+
+            public MethodUniqueIdentifier(long methodId, string fullyQualifiedName)
+            {
+                MethodId = methodId;
+                FullyQualifiedName = fullyQualifiedName;
+            }
+        }
+
         private readonly Dictionary<int, SortedList<double, TRACING.TraceEvent>> _threadSchedule;
 
         private readonly SortedList<double, TRACING.TraceEvent> _overallEvents;
 
-        private readonly Dictionary<Tuple<long, string>, int> _methodToThreadMap;
+        private readonly Dictionary<MethodUniqueIdentifier, int> _methodToThreadMap;
 
         public int PidUnderTest { get; private set; }
 
@@ -35,30 +47,30 @@ namespace MusicStore.ETWLogAnalyzer
             _methodToThreadMap = GetMethodToThreadCache();
         }
 
-        private Dictionary<Tuple<long, string>, int> GetMethodToThreadCache()
+        private Dictionary<MethodUniqueIdentifier, int> GetMethodToThreadCache()
         {
             return _overallEvents.Values
                 .Where(ev => ev is PARSERS.Clr.MethodLoadUnloadVerboseTraceData)
                 .Select(ev => ev as PARSERS.Clr.MethodLoadUnloadVerboseTraceData)
-                .ToDictionary(x => new Tuple<long, string>(x.MethodID, x.MethodName + x.MethodSignature), x => x.ThreadID);
+                .ToDictionary(x => new MethodUniqueIdentifier(x.MethodID, x.MethodName + x.MethodSignature), x => x.ThreadID);
         }
 
         /// <summary>
         /// Returns true if the process jitted a method with the given (ID, name) tuple, false otherwise
         /// </summary>
-        /// <param name="methodIdNamePair"> (identifier, fully quallified name) pair for method </param>
+        /// <param name="methodUniqueIdentifier"> (identifier, fully quallified name) pair for method </param>
         /// <param name="threadId"> int identifier of the jitting thread </param>
         /// <returns> true if method jitted by process </returns>
-        public bool GetJittingThreadForMethod(Tuple<long, string> methodIdNamePair, out int threadId)
+        public bool GetJittingThreadForMethod(MethodUniqueIdentifier methodUniqueIdentifier, out int threadId)
         {
-            return _methodToThreadMap.TryGetValue(methodIdNamePair, out threadId);
+            return _methodToThreadMap.TryGetValue(methodUniqueIdentifier, out threadId);
         }
 
         /// <summary>
         /// Retrieve a list of methods jitted by the process.
         /// </summary>
         /// <returns> list of(identifier, fully quallified name) pair for methods jitted</returns>
-        public List<Tuple<long, string>> GetJittedMethodsList() => _methodToThreadMap.Keys.ToList();
+        public List<MethodUniqueIdentifier> GetJittedMethodsList() => _methodToThreadMap.Keys.ToList();
 
         /// <summary>
         /// Retrieve a list of threads used by the process.
