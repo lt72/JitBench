@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace MusicStore.ETWLogAnalyzer.EventFilters
 {
-    internal class ThreadCSwitchFilter : IEventFilter
+    public class ThreadCSwitchFilter : IEventFilter
     {
         private int _pid;
 

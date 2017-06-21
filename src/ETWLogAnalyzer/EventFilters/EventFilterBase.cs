@@ -3,7 +3,7 @@ using TRACING = Microsoft.Diagnostics.Tracing;
 
 namespace MusicStore.ETWLogAnalyzer.EventFilters
 {
-    internal interface IEventFilter
+    public interface IEventFilter
     {
         /// <summary>
         /// This method will determine if the event is relevant to the process under tracing

@@ -9,8 +9,6 @@ namespace MusicStore.ETWLogAnalyzer.Reports
 {
     internal class ThreadStatistics : ReportBase
     {
-
-        // LORENZO-TODO: add the total thread nominal time (i.e. its lifetime during the observation)
         private class ThreadQuantumInfo
         {
             public int IntervalCount = 0;

@@ -6,7 +6,7 @@ using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 
 namespace MusicStore.ETWLogAnalyzer
 {
-    internal partial class ETWData
+    internal partial class ETWData_thread
     {
         internal class ThreadEvent
         {
@@ -59,7 +59,7 @@ namespace MusicStore.ETWLogAnalyzer
                 return obj.GetHashCode() == this.GetHashCode();
             }
 
-            protected TRACING.TraceEvent Data
+            internal TRACING.TraceEvent Data
             {
                 get
                 {
@@ -77,9 +77,7 @@ namespace MusicStore.ETWLogAnalyzer
         /// Returns a list of the threads used by the process.
         /// </summary>
         public Dictionary<int, SortedList<double, TRACING.TraceEvent>>.KeyCollection ThreadList { get => _threadSchedule.Keys; }
-
-        public Dictionary<int, ETWTimeInterval> ThreadLifeIntervals { get => _threadLifetimes; }
-
+       
         /// <summary>
         /// 
         /// </summary>
@@ -95,7 +93,7 @@ namespace MusicStore.ETWLogAnalyzer
             var contextSwitchOutList =
                 GetMatchingEventsForThread(
                     threadId,
-                    (ev) => (ev is PARSERS.Kernel.CSwitchTraceData && (ev as PARSERS.Kernel.CSwitchTraceData).NewThreadID != threadId));
+                    (ev) => (ev is PARSERS.Kernel.CSwitchTraceData && (ev as PARSERS.Kernel.CSwitchTraceData).OldThreadID == threadId));
 
             System.Diagnostics.Debug.Assert(contextSwitchInList.Count == contextSwitchOutList.Count);
 

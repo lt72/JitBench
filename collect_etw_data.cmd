@@ -21,8 +21,8 @@ set BASEDIR=%~dp0%
 set CONFIGURATION=Release
 
 set DOTNET_EVENTS="Default+Binder+Loader+Jit+Threading+Type"
-set KERNEL_EVENTS="Default+Process+Thread+ImageLoad+ContextSwitch+DiskIO+DiskIOInit+SplitIO+ThreadTime+FileIO+FileIOInit"
-REM set KERNEL_EVENTS="Default+Process+Thread+ImageLoad+ProcessCounters+ContextSwitch+DeferedProcedureCalls+SystemCall+DiskIO+DiskIOInit+Dispatcher+Memory+MemoryHardFaults+VirtualAlloc+VAMap+Registry+AdvancedLocalProcedureCalls+SplitIO+Handle+OS+ThreadTime+FileIO+FileIOInit+IOQueue+ThreadPriority"
+set KERNEL_EVENTS="Default+Process+Thread+ImageLoad+ContextSwitch+DiskIO+DiskIOInit+SplitIO+ThreadTime+FileIO+FileIOInit+MemoryHardFaults+VirtualAlloc+ReferenceSet+IOQueue+FileIO+FileIOInit+Dispatcher+MemoryHardFaults"
+rem set KERNEL_EVENTS="Default+Process+Thread+ImageLoad+ProcessCounters+ContextSwitch+DeferedProcedureCalls+SystemCall+DiskIO+DiskIOInit+Dispatcher+Memory+MemoryHardFaults+VirtualAlloc+VAMap+Registry+AdvancedLocalProcedureCalls+SplitIO+Handle+OS+ThreadTime+FileIO+FileIOInit+IOQueue+ThreadPriority+ReferenceSet"
 
 
 powershell ./Dotnet-Install.ps1 -SharedRuntime -InstallDir .dotnet -Channel master -Architecture x64 -Version 2.0.0-preview2-25316-01
@@ -37,6 +37,6 @@ xppurge.exe -empty
 pushd bin\Release\netcoreapp2.0\publish
 REM ..\..\..\..\..\..\.dotnet\dotnet.exe MusicStore.dll
 copy \\clrmain\tools\PerfView.exe .
-PerfView.exe /NoGui /NoView /ClrEvents:%DOTNET_EVENTS% /KernelEvents:%KERNEL_EVENTS% /Providers:*aspnet-JitBench-MusicStore /Zip:FALSE run ..\..\..\..\..\..\.dotnet\dotnet.exe MusicStore.dll
+PerfView.exe /NoGui /NoView /ClrEvents:%DOTNET_EVENTS% /KernelEvents:%KERNEL_EVENTS% /Providers:*aspnet-JitBench-MusicStore /Zip:FALSE /BufferSize:2048 run ..\..\..\..\..\..\.dotnet\dotnet.exe MusicStore.dll
 popd
 popd

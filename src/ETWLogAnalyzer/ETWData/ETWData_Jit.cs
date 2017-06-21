@@ -8,7 +8,7 @@ using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 
 namespace MusicStore.ETWLogAnalyzer
 {
-    internal partial class ETWData
+    internal partial class ETWData_jit
     {
         internal class JitEvent : ThreadEvent
         {
@@ -34,8 +34,9 @@ namespace MusicStore.ETWLogAnalyzer
 
             internal JitEvent(PARSERS.Clr.MethodJittingStartedTraceData etwData) : base(etwData)
             {
-            }
 
+            }
+            
             internal int MethodToken
             {
                 get
@@ -53,6 +54,16 @@ namespace MusicStore.ETWLogAnalyzer
                     var jit = (PARSERS.Clr.MethodJittingStartedTraceData)Data;
 
                     return jit.MethodName;
+                }
+            }
+
+            internal long MethodId
+            {
+                get
+                {
+                    var jit = (PARSERS.Clr.MethodJittingStartedTraceData)Data;
+
+                    return jit.MethodID;
                 }
             }
 
@@ -83,10 +94,7 @@ namespace MusicStore.ETWLogAnalyzer
             var jitFinishedEvents = GetMatchingEventsForThread(
                 threadId,
                 (ev) => (ev is PARSERS.Clr.MethodLoadUnloadVerboseTraceData));
-
-            // TODO: Check unma
-            // System.Diagnostics.Debug.Assert(jitStartEvents.Count == jitFinishedEvents.Count);
-
+            
             foreach(var jitStart in jitStartEvents)
             {
                 var castEvent = jitStart as PARSERS.Clr.MethodJittingStartedTraceData;
@@ -96,7 +104,10 @@ namespace MusicStore.ETWLogAnalyzer
             foreach(var jitStop in jitFinishedEvents)
             {
                 var castEvent = jitStop as PARSERS.Clr.MethodLoadUnloadVerboseTraceData;
-                var jitInfo= jitMap[castEvent.MethodID];
+                if (!jitMap.TryGetValue(castEvent.MethodID, out JitEvent jitInfo))
+                {
+                    throw new ArgumentException($"The method {castEvent.MethodName} did not have a matching jit start event in the thread.");
+                }
                 jitInfo.Duration = castEvent.TimeStampRelativeMSec - jitInfo.BeginTime;
             }
 

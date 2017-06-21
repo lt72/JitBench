@@ -7,11 +7,11 @@ using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 
 namespace MusicStore.ETWLogAnalyzer.EventFilters
 {
-    class IOFilter : IEventFilter
+    public class IOFilter : IEventFilter
     {
         // TODO: Double check on opcode, there's more than one read one... 
-        static TRACING.TraceEventOpcode READ = (TRACING.TraceEventOpcode)10;
-        static TRACING.TraceEventOpcode READ_INIT = (TRACING.TraceEventOpcode)12;
+        // public static TRACING.TraceEventOpcode READ = (TRACING.TraceEventOpcode)10;
+        // public static TRACING.TraceEventOpcode READ_INIT = (TRACING.TraceEventOpcode)12;
         private int _pidUnderTest;
         private Dictionary<UInt64, int> _IRPToThread;
 
