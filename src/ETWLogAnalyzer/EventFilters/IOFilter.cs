@@ -37,8 +37,7 @@ namespace MusicStore.ETWLogAnalyzer.EventFilters
                 relevantThreadList = new List<int>();
                 // Try to report the thread that issued the request matched by IRP
                 // otherwise log the thread reported in the request finish event.
-                int relevantThreadId;
-                if (!_IRPToThread.TryGetValue(ioFinishEv.Irp, out relevantThreadId))
+                if (!_IRPToThread.TryGetValue(ioFinishEv.Irp, out int relevantThreadId))
                 {
                     _IRPToThread.Remove(ioFinishEv.Irp);
                 }

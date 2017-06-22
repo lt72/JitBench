@@ -26,8 +26,8 @@ namespace MusicStore.ETWLogAnalyzer.Reports
                 
         public ThreadStatistics()
         {
-            // LORENZO-TODO: consider makign 'int' (threadID) a value type (struct)  struct ThreadId { public uint64 Id; } and use top 32 bits to disambiguate...
             _methodJistStatsPerThread = new Dictionary<int, Dictionary<ETWData.MethodUniqueIdentifier, MethodQuantumInfo>>();
+            Name = "thread_quantum_stats.txt";
         }
 
         public override ReportBase Analyze(ETWData data)
@@ -42,12 +42,8 @@ namespace MusicStore.ETWLogAnalyzer.Reports
                 System.Diagnostics.Debug.Assert(jitTimeVisitor.State != EventVisitor<Dictionary<ETWData.MethodUniqueIdentifier, double>>.VisitorState.Error
                     && availableQuantumTimeVisitor.State != EventVisitor<Dictionary<ETWData.MethodUniqueIdentifier, double>>.VisitorState.Error);
 
-                var jitTimeUsedPerMethod = jitTimeVisitor.Result;
-                var availableJitTimePerMethod = jitTimeVisitor.Result;
-
-                var quantumStatsPerMethod = ZipResults(jitTimeUsedPerMethod, availableJitTimePerMethod);
-
-                _methodJistStatsPerThread.Add(threadId, quantumStatsPerMethod);
+                _methodJistStatsPerThread.Add(threadId,
+                    ZipResults(jitTimeVisitor.Result, availableQuantumTimeVisitor.Result));
             }
             return this;
         }
@@ -65,8 +61,8 @@ namespace MusicStore.ETWLogAnalyzer.Reports
                 (double threadJitTime, double threadQuantumJitTime) = AccumulateMethodTimes(threadInfo.Value);
 
                 var formatString = "{0, -35}:\t{1,9}";
-                writer.WriteLine(String.Format(formatString, "Nominal jitting time [ms]", threadJitTime));
-                writer.WriteLine(String.Format(formatString, "Available quantum time [ms]", threadQuantumJitTime));
+                writer.WriteLine(String.Format(formatString, "Effective jitting time [ms]", threadJitTime));
+                writer.WriteLine(String.Format(formatString, "Quantum time assigned for jit[ms]", threadQuantumJitTime));
                 var efficiency = (threadQuantumJitTime == 0) ? 100 : threadJitTime / threadQuantumJitTime * 100;
                 writer.WriteLine(String.Format(formatString, "Quantum Efficiency [%]", efficiency));
                 writer.RemoveIndentationLevel();

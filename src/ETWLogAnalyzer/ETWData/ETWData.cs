@@ -21,6 +21,38 @@ namespace MusicStore.ETWLogAnalyzer
                 MethodId = methodId;
                 FullyQualifiedName = fullyQualifiedName;
             }
+
+            public MethodUniqueIdentifier(PARSERS.Clr.MethodJittingStartedTraceData jitEv)
+            {
+                MethodId = jitEv.MethodID;
+                FullyQualifiedName = $"{jitEv.MethodNamespace}::{jitEv.MethodID}";
+            }
+
+            public MethodUniqueIdentifier(PARSERS.Clr.MethodLoadUnloadVerboseTraceData jitEv)
+            {
+                MethodId = jitEv.MethodID;
+                FullyQualifiedName = $"{jitEv.MethodNamespace}::{jitEv.MethodID}";
+            }
+
+            public override int GetHashCode()
+            {
+                return MethodId.GetHashCode() ^ FullyQualifiedName.GetHashCode();
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (obj == null || GetType() != obj.GetType())
+                {
+                    return false;
+                }
+
+                if (ReferenceEquals(this, obj))
+                {
+                    return true;
+                }
+
+                return GetHashCode() == obj.GetHashCode();
+            }
         }
 
         private readonly Dictionary<int, SortedList<double, TRACING.TraceEvent>> _threadSchedule;

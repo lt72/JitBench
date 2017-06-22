@@ -42,14 +42,14 @@ namespace MusicStore.ETWLogAnalyzer.ReportWriters
 
         public virtual void WriteHeader(string text)
         {
-            writeOffset();
+            WriteOffset();
             this.SkipLine();
             this.SkipLine();
             this.WriteLine(text);
             this.SkipLine();
         }
 
-        public virtual void writeOffset()
+        public virtual void WriteOffset()
         {
             _stream.Write(new String('\t', _intendationOffset));
         }
@@ -60,7 +60,7 @@ namespace MusicStore.ETWLogAnalyzer.ReportWriters
 
         public virtual void Write(string text)
         {
-            writeOffset();
+            WriteOffset();
             _stream.Write(text);
         }
 
@@ -71,7 +71,7 @@ namespace MusicStore.ETWLogAnalyzer.ReportWriters
 
         public virtual void WriteLine(string text)
         {
-            writeOffset();
+            WriteOffset();
             _stream.WriteLine(text);
         }
     }

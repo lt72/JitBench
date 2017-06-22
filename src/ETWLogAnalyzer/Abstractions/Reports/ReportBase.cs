@@ -3,6 +3,8 @@ namespace MusicStore.ETWLogAnalyzer.AbstractBases
 {
     public abstract class ReportBase 
     {
+        public string Name { get; protected set; }
+
         protected ReportBase()
         {
         }

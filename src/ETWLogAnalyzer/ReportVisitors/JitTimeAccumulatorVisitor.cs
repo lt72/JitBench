@@ -39,6 +39,7 @@ namespace MusicStore.ETWLogAnalyzer.ReportVisitors
                 _internalState = InternalState.JitRunning;
                 _lastStart = jitStartEv.TimeStampRelativeMSec;
                 _methodJitting = jitStartEv;
+                _accumulator = 0.0;
             }
             else if (ev is PARSERS.Kernel.CSwitchTraceData cSwitchEv && _internalState == InternalState.JitRunning)
             {
@@ -66,7 +67,6 @@ namespace MusicStore.ETWLogAnalyzer.ReportVisitors
                     new ETWData.MethodUniqueIdentifier(_methodJitting.MethodID, fullyQualName), _accumulator);
 
                 _internalState = InternalState.JitFinished;
-                _accumulator = 0;
                 _methodJitting = null;
             }
         }

@@ -58,14 +58,13 @@ namespace MusicStore.ETWLogAnalyzer
 
             Console.WriteLine("...analyzing data...");
 
-            Helpers.ETWEventsHolder events = FilterRelevantEvents(put);
+            ETWData data = GenerateModel(put);
             
             // Generate some reports
 
             Console.WriteLine("...Generating reports...");
-            var etwData = new ETWData(put, events);
 
-            GenerateReports(etwData);
+            GenerateReports(data);
 
             Console.WriteLine("...done!");
 
@@ -74,15 +73,14 @@ namespace MusicStore.ETWLogAnalyzer
 
         private static void GenerateReports(ETWData etwData)
         {
-            string baseFolder = Environment.ExpandEnvironmentVariables(CmdLine.Arguments[CmdLine.OutputPathSwitch].Value);
-            baseFolder = baseFolder.EndsWith(value: @"\") ? baseFolder.Substring(0, baseFolder.Length - 1) : baseFolder;
+            Controller.RegisterReports(new List<Type> {
+                typeof(ThreadStatistics)
+            });
 
-            // LORENZO-TODO: add system call to discover the quantum time or find dynamically
-            new ThreadStatistics().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(@baseFolder + @"\thread_quantum_stats.txt"), true);
-            //new JitStatistics().Analyze(etwData).Persist(new ReportWriters.PlainTextWriter(baseFolder + @"\jit_statistics.txt"), true);
+            Controller.ProcessReports(CmdLine.Arguments[CmdLine.OutputPathSwitch].Value, etwData);
         }
 
-        private static Helpers.ETWEventsHolder FilterRelevantEvents(PARSERS.Kernel.ProcessTraceData put)
+        private static ETWData GenerateModel(PARSERS.Kernel.ProcessTraceData put)
         {
             var events = new Helpers.ETWEventsHolder(put.ProcessID);
             using (var source = new TRACING.ETWTraceEventSource(CmdLine.Arguments[CmdLine.EtwLogSwitch].Value))
@@ -127,16 +125,13 @@ namespace MusicStore.ETWLogAnalyzer
                 {
                     events.StoreIfRelevant(data);
                 });
-                
-                
+                                
                 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
+                
                 // CLR events
 
                 PARSERS.ClrTraceEventParser clrParser = source.Clr;
-
-
+                
                 // Thread creating
 
                 clrParser.ThreadCreating += delegate (PARSERS.Clr.ThreadStartWorkTraceData data)
@@ -194,7 +189,8 @@ namespace MusicStore.ETWLogAnalyzer
                 
                 source.Process();
             }
-            return events;
+
+            return new ETWData(put, events);
         }
 
         // Helpers

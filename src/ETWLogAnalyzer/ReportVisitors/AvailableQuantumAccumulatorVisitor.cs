@@ -41,6 +41,7 @@ namespace MusicStore.ETWLogAnalyzer.ReportVisitors
                 _internalState = InternalState.JitRunning;
                 _lastSwitchinOrJitStart = jitStartEv.TimeStampRelativeMSec;
                 _methodJitting = jitStartEv;
+                _accumulator = 0.0;
             }
             else if (ev is PARSERS.Kernel.CSwitchTraceData cSwitchEv)
             {
@@ -48,8 +49,10 @@ namespace MusicStore.ETWLogAnalyzer.ReportVisitors
                 {
                     _accumulator += cSwitchEv.TimeStampRelativeMSec - _lastSwitchinOrJitStart; // Used time
 
-                    System.Diagnostics.Debug.Assert(QuantumLength - (cSwitchEv.TimeStampRelativeMSec - _lastSwitchIn) >= 0);
-                    _accumulator += QuantumLength - (cSwitchEv.TimeStampRelativeMSec - _lastSwitchIn); // Wasted quantum available for jitting
+                    double wastedQuantum = QuantumLength - (cSwitchEv.TimeStampRelativeMSec - _lastSwitchIn);
+                    // Adjust for quantums extended by the system.
+                    wastedQuantum = (wastedQuantum > 0) ? wastedQuantum : 0;
+                    _accumulator += wastedQuantum;
                 }
                 else
                 {
@@ -73,7 +76,6 @@ namespace MusicStore.ETWLogAnalyzer.ReportVisitors
                     new ETWData.MethodUniqueIdentifier(_methodJitting.MethodID, fullyQualName), _accumulator);
 
                 _internalState = InternalState.JitFinished;
-                _accumulator = 0;
                 _methodJitting = null;
             }
         }
