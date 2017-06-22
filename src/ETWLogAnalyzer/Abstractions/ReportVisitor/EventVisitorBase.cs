@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using TRACING = Microsoft.Diagnostics.Tracing;
-using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 
 namespace MusicStore.ETWLogAnalyzer.AbstractBases
 {

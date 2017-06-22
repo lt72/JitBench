@@ -63,7 +63,9 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Abstractions\Reports\ReportBase.cs" />
+    <Compile Include="Reports\JitStatistics.cs" />
     <Compile Include="Reports\ThreadStatistics.cs" />
+    <Compile Include="ReportVisitors\PerceivedJitTimeVisitor.cs" />
     <Compile Include="ReportWriters\PlainTextWriter.cs" />
     <Compile Include="ReportWriters\TextReportWriter.cs" />
     <Compile Include="ReportVisitors\AvailableQuantumAccumulatorVisitor.cs" />

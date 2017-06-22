@@ -107,13 +107,13 @@ namespace MusicStore.ETWLogAnalyzer
         /// Retrieve a list of methods jitted by the process.
         /// </summary>
         /// <returns> list of(identifier, fully quallified name) pair for methods jitted</returns>
-        public List<MethodUniqueIdentifier> GetJittedMethodsList() => _methodToThreadMap.Keys.ToList();
+        public List<MethodUniqueIdentifier> GetJittedMethodsList => _methodToThreadMap.Keys.ToList();
 
         /// <summary>
         /// Retrieve a list of threads used by the process.
         /// </summary>
         /// <returns> list of threads used by the process </returns>
-        public List<int> GetThreadList() => _threadSchedule.Keys.ToList();
+        public List<int> GetThreadList => _threadSchedule.Keys.ToList();
 
         public IEnumerator<TRACING.TraceEvent> GetThreadTimeline(int threadId)
         {

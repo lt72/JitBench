@@ -19,7 +19,7 @@ namespace MusicStore.ETWLogAnalyzer.ReportVisitors
         private InternalState _internalState;
         private PARSERS.Clr.MethodJittingStartedTraceData _methodJitting;
         private double _lastStart;
-        private int _threadId;
+        private readonly int _threadId;
         private double _accumulator;
 
         public JitTimeAccumulatorVisitor(int threadId) : base()
