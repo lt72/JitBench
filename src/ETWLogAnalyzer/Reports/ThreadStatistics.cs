@@ -8,7 +8,7 @@ using MusicStore.ETWLogAnalyzer.ReportVisitors;
 
 namespace MusicStore.ETWLogAnalyzer.Reports
 {
-    internal class ThreadStatistics : ReportBase
+    public class ThreadStatistics : ReportBase
     {
         private class MethodQuantumInfo
         {
@@ -21,6 +21,8 @@ namespace MusicStore.ETWLogAnalyzer.Reports
                 AvailableQuantumTime = quantumTime;
             }
         }
+
+        private static readonly string FormatString = "{0, -35}:\t{1,9}";
 
         private Dictionary<int, Dictionary<ETWData.MethodUniqueIdentifier, MethodQuantumInfo>> _methodJistStatsPerThread;
                 
@@ -60,12 +62,34 @@ namespace MusicStore.ETWLogAnalyzer.Reports
                 writer.AddIndentationLevel();
                 (double threadJitTime, double threadQuantumJitTime) = AccumulateMethodTimes(threadInfo.Value);
 
-                var formatString = "{0, -35}:\t{1,9}";
-                writer.WriteLine(String.Format(formatString, "Effective jitting time [ms]", threadJitTime));
-                writer.WriteLine(String.Format(formatString, "Quantum time assigned for jit[ms]", threadQuantumJitTime));
+                
+                writer.WriteLine(String.Format(FormatString, "Effective jitting time [ms]", threadJitTime));
+                writer.WriteLine(String.Format(FormatString, "Quantum time assigned for jit[ms]", threadQuantumJitTime));
                 var efficiency = (threadQuantumJitTime == 0) ? 100 : threadJitTime / threadQuantumJitTime * 100;
-                writer.WriteLine(String.Format(formatString, "Quantum Efficiency [%]", efficiency));
+                writer.WriteLine(String.Format(FormatString, "Quantum Efficiency [%]", efficiency));
                 writer.RemoveIndentationLevel();
+            }
+
+            writer.SkipLine();
+            writer.SkipLine();
+            writer.WriteTitle("Method Jitting Statistics");
+
+            foreach (var methodsInThread in _methodJistStatsPerThread.Values)
+            {
+                foreach (var methodInfoTimePair in methodsInThread)
+                {
+                    writer.WriteHeader("Method " + methodInfoTimePair.Key);
+
+                    writer.AddIndentationLevel();
+
+                    double jitTime = methodInfoTimePair.Value.JitTimeUsed;
+                    double requestedTime = methodInfoTimePair.Value.AvailableQuantumTime;
+                    writer.WriteLine(String.Format(FormatString, "Effective jitting time [ms]", jitTime));
+                    writer.WriteLine(String.Format(FormatString, "Quantum time assigned for jit[ms]", requestedTime));
+                    writer.WriteLine(String.Format(FormatString, "Quantum Efficiency [%]", 100.0 * jitTime / requestedTime));
+
+                    writer.RemoveIndentationLevel();
+                }
             }
 
             if (dispose)

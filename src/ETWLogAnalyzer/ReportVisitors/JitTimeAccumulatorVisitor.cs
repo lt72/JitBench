@@ -62,9 +62,8 @@ namespace MusicStore.ETWLogAnalyzer.ReportVisitors
                 }
 
                 _accumulator += jitEndEv.TimeStampRelativeMSec - _lastStart;
-                string fullyQualName = _methodJitting.MethodNamespace + _methodJitting.MethodName;
                 Result.Add(
-                    new ETWData.MethodUniqueIdentifier(_methodJitting.MethodID, fullyQualName), _accumulator);
+                    new ETWData.MethodUniqueIdentifier(_methodJitting), _accumulator);
 
                 _internalState = InternalState.JitFinished;
                 _methodJitting = null;

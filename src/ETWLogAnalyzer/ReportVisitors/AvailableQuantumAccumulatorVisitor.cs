@@ -7,7 +7,7 @@ using MusicStore.ETWLogAnalyzer.AbstractBases;
 
 namespace MusicStore.ETWLogAnalyzer.ReportVisitors
 {
-    class AvailableQuantumAccumulatorVisitor : EventVisitor<Dictionary<ETWData.MethodUniqueIdentifier, double>>
+    public class AvailableQuantumAccumulatorVisitor : EventVisitor<Dictionary<ETWData.MethodUniqueIdentifier, double>>
     {
         private enum InternalState { Ready, JitRunning, JitFinished };
         private static readonly List<Type> RelevantTypes = new List<Type> {
@@ -71,9 +71,8 @@ namespace MusicStore.ETWLogAnalyzer.ReportVisitors
                 }
 
                 _accumulator += jitEndEv.TimeStampRelativeMSec - _lastSwitchinOrJitStart;
-                string fullyQualName = _methodJitting.MethodNamespace + _methodJitting.MethodName;
                 Result.Add(
-                    new ETWData.MethodUniqueIdentifier(_methodJitting.MethodID, fullyQualName), _accumulator);
+                    new ETWData.MethodUniqueIdentifier(_methodJitting), _accumulator);
 
                 _internalState = InternalState.JitFinished;
                 _methodJitting = null;

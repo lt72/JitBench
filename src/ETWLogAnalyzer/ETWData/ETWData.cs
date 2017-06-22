@@ -25,13 +25,13 @@ namespace MusicStore.ETWLogAnalyzer
             public MethodUniqueIdentifier(PARSERS.Clr.MethodJittingStartedTraceData jitEv)
             {
                 MethodId = jitEv.MethodID;
-                FullyQualifiedName = $"{jitEv.MethodNamespace}::{jitEv.MethodID}";
+                FullyQualifiedName = $"{jitEv.MethodNamespace}::{jitEv.MethodName}";
             }
 
             public MethodUniqueIdentifier(PARSERS.Clr.MethodLoadUnloadVerboseTraceData jitEv)
             {
                 MethodId = jitEv.MethodID;
-                FullyQualifiedName = $"{jitEv.MethodNamespace}::{jitEv.MethodID}";
+                FullyQualifiedName = $"{jitEv.MethodNamespace}::{jitEv.MethodName}";
             }
 
             public override int GetHashCode()
@@ -52,6 +52,11 @@ namespace MusicStore.ETWLogAnalyzer
                 }
 
                 return GetHashCode() == obj.GetHashCode();
+            }
+
+            public override string ToString()
+            {
+                return $"{FullyQualifiedName} (MethodID {MethodId})";
             }
         }
 
@@ -84,7 +89,7 @@ namespace MusicStore.ETWLogAnalyzer
             return _overallEvents.Values
                 .Where(ev => ev is PARSERS.Clr.MethodLoadUnloadVerboseTraceData)
                 .Select(ev => ev as PARSERS.Clr.MethodLoadUnloadVerboseTraceData)
-                .ToDictionary(x => new MethodUniqueIdentifier(x.MethodID, x.MethodName + x.MethodSignature), x => x.ThreadID);
+                .ToDictionary(x => new MethodUniqueIdentifier(x), x => x.ThreadID);
         }
 
         /// <summary>
