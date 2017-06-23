@@ -30,6 +30,11 @@ namespace MusicStore.ETWLogAnalyzer
             
             foreach (System.Type reportType in _reportList)
             {
+                if (reportType.IsSubclassOf(typeof(ReportBase)))
+                {
+                    continue;
+                }
+
                 var reportInstance = System.Activator.CreateInstance(reportType) as ReportBase;
                 System.Diagnostics.Debug.Assert(reportInstance != null);
 
