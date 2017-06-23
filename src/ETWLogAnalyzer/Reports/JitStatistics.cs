@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using MusicStore.ETWLogAnalyzer.AbstractBases;
+using MusicStore.ETWLogAnalyzer.Abstractions;
 using MusicStore.ETWLogAnalyzer.ReportVisitors;
 using MusicStore.ETWLogAnalyzer.ReportWriters;
-
-using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 
 namespace MusicStore.ETWLogAnalyzer.Reports
 {
@@ -25,15 +23,15 @@ namespace MusicStore.ETWLogAnalyzer.Reports
 
         private static readonly string FormatString = "{0, -35}:\t{1,9}";
 
-        private Dictionary<int, Dictionary<ETWData.MethodUniqueIdentifier, JitTimeInfo>> _methodJitStatsPerThread;
+        private Dictionary<int, Dictionary<MethodUniqueIdentifier, JitTimeInfo>> _methodJitStatsPerThread;
 
         public JitStatistics()
         {
-            _methodJitStatsPerThread = new Dictionary<int, Dictionary<ETWData.MethodUniqueIdentifier, JitTimeInfo>>();
+            _methodJitStatsPerThread = new Dictionary<int, Dictionary<MethodUniqueIdentifier, JitTimeInfo>>();
             Name = "jit_time_stats.txt";
         }
 
-        public override ReportBase Analyze(ETWData data)
+        public override ReportBase Analyze(EventModelBase data)
         {
             foreach (int threadId in data.GetThreadList)
             {
@@ -43,8 +41,8 @@ namespace MusicStore.ETWLogAnalyzer.Reports
                 Controller.RunVisitorForResult(jitTimeVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(perceivedJitTimeVisitor, data.GetThreadTimeline(threadId));
 
-                System.Diagnostics.Debug.Assert(jitTimeVisitor.State != EventVisitor<Dictionary<ETWData.MethodUniqueIdentifier, double>>.VisitorState.Error
-                    && perceivedJitTimeVisitor.State != EventVisitor<Dictionary<ETWData.MethodUniqueIdentifier, double>>.VisitorState.Error);
+                System.Diagnostics.Debug.Assert(jitTimeVisitor.State != EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error
+                    && perceivedJitTimeVisitor.State != EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error);
 
                 _methodJitStatsPerThread.Add(threadId,
                     ZipResults(jitTimeVisitor.Result, perceivedJitTimeVisitor.Result));
@@ -103,21 +101,21 @@ namespace MusicStore.ETWLogAnalyzer.Reports
 
         // Helpers
 
-        private JitTimeInfo AccumulateMethodTimes(Dictionary<ETWData.MethodUniqueIdentifier, JitTimeInfo> threadMethodJitTimes)
+        private JitTimeInfo AccumulateMethodTimes(Dictionary<MethodUniqueIdentifier, JitTimeInfo> threadMethodJitTimes)
         {
             double threadJitTime = threadMethodJitTimes.Values.Aggregate(0.0, (accumulator, value) => accumulator + value.JitTimeUsed);
             double threadPerceivdJitTime = threadMethodJitTimes.Values.Aggregate(0.0, (accumulator, value) => accumulator + value.PerceivedJitTime);
             return new JitTimeInfo(threadJitTime, threadPerceivdJitTime);
         }
         
-        private Dictionary<ETWData.MethodUniqueIdentifier, JitTimeInfo> ZipResults(
-            Dictionary<ETWData.MethodUniqueIdentifier, double> jitTimeUsedPerMethod,
-            Dictionary<ETWData.MethodUniqueIdentifier, double> perceivedJitTimesPerMethod)
+        private Dictionary<MethodUniqueIdentifier, JitTimeInfo> ZipResults(
+            Dictionary<MethodUniqueIdentifier, double> jitTimeUsedPerMethod,
+            Dictionary<MethodUniqueIdentifier, double> perceivedJitTimesPerMethod)
         {
             return (from methodUniqueId in jitTimeUsedPerMethod.Keys
                     let effectiveTime = jitTimeUsedPerMethod[methodUniqueId]
                     let perceivedTime = perceivedJitTimesPerMethod[methodUniqueId]
-                    select new KeyValuePair<ETWData.MethodUniqueIdentifier, JitTimeInfo>(
+                    select new KeyValuePair<MethodUniqueIdentifier, JitTimeInfo>(
                         methodUniqueId,
                         new JitTimeInfo(effectiveTime, perceivedTime)))
                     .ToDictionary(x => x.Key, x => x.Value);

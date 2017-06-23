@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 using MusicStore.ETWLogAnalyzer.EventFilters;
-using MusicStore.ETWLogAnalyzer.AbstractBases;
+using MusicStore.ETWLogAnalyzer.Abstractions;
 
 namespace MusicStore.ETWLogAnalyzer.Helpers
 {

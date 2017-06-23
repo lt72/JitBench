@@ -1,5 +1,4 @@
-﻿
-namespace MusicStore.ETWLogAnalyzer.AbstractBases
+﻿namespace MusicStore.ETWLogAnalyzer.Abstractions
 {
     public abstract class ReportBase 
     {
@@ -9,7 +8,7 @@ namespace MusicStore.ETWLogAnalyzer.AbstractBases
         {
         }
 
-        public abstract ReportBase Analyze(ETWData data);
+        public abstract ReportBase Analyze(EventModelBase data);
 
         public abstract void Persist(ReportWriters.TextReportWriter writer, bool dispose);
 

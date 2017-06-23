@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using MusicStore.ETWLogAnalyzer.ReportWriters;
-using MusicStore.ETWLogAnalyzer.AbstractBases;
+using MusicStore.ETWLogAnalyzer.Abstractions;
 using MusicStore.ETWLogAnalyzer.ReportVisitors;
 
 namespace MusicStore.ETWLogAnalyzer.Reports
@@ -24,15 +24,15 @@ namespace MusicStore.ETWLogAnalyzer.Reports
 
         private static readonly string FormatString = "{0, -35}:\t{1,9}";
 
-        private Dictionary<int, Dictionary<ETWData.MethodUniqueIdentifier, QuantumTimeInfo>> _methodJistStatsPerThread;
+        private Dictionary<int, Dictionary<MethodUniqueIdentifier, QuantumTimeInfo>> _methodJistStatsPerThread;
                 
         public ThreadStatistics()
         {
-            _methodJistStatsPerThread = new Dictionary<int, Dictionary<ETWData.MethodUniqueIdentifier, QuantumTimeInfo>>();
+            _methodJistStatsPerThread = new Dictionary<int, Dictionary<MethodUniqueIdentifier, QuantumTimeInfo>>();
             Name = "quantum_usage_stats.txt";
         }
 
-        public override ReportBase Analyze(ETWData data)
+        public override ReportBase Analyze(EventModelBase data)
         {
             foreach (int threadId in data.GetThreadList)
             {
@@ -41,8 +41,8 @@ namespace MusicStore.ETWLogAnalyzer.Reports
                 Controller.RunVisitorForResult(jitTimeVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(availableQuantumTimeVisitor, data.GetThreadTimeline(threadId));
 
-                System.Diagnostics.Debug.Assert(jitTimeVisitor.State != EventVisitor<Dictionary<ETWData.MethodUniqueIdentifier, double>>.VisitorState.Error
-                    && availableQuantumTimeVisitor.State != EventVisitor<Dictionary<ETWData.MethodUniqueIdentifier, double>>.VisitorState.Error);
+                System.Diagnostics.Debug.Assert(jitTimeVisitor.State != EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error
+                    && availableQuantumTimeVisitor.State != EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error);
 
                 _methodJistStatsPerThread.Add(threadId,
                     ZipResults(jitTimeVisitor.Result, availableQuantumTimeVisitor.Result));
@@ -101,21 +101,21 @@ namespace MusicStore.ETWLogAnalyzer.Reports
 
         // Helpers
 
-        private QuantumTimeInfo AccumulateMethodTimes(Dictionary<ETWData.MethodUniqueIdentifier, QuantumTimeInfo> threadMethodJitTimes)
+        private QuantumTimeInfo AccumulateMethodTimes(Dictionary<MethodUniqueIdentifier, QuantumTimeInfo> threadMethodJitTimes)
         {
             double threadJitTime = threadMethodJitTimes.Values.Aggregate(0.0, (accumulator, value) => accumulator + value.JitTimeUsed);
             double threadQuantumJitTime = threadMethodJitTimes.Values.Aggregate(0.0, (accumulator, value) => accumulator + value.AvailableQuantumTime);
             return new QuantumTimeInfo(threadJitTime, threadQuantumJitTime);
         }
 
-        private Dictionary<ETWData.MethodUniqueIdentifier, QuantumTimeInfo> ZipResults(
-            Dictionary<ETWData.MethodUniqueIdentifier, double> jitTimeUsedPerMethod,
-            Dictionary<ETWData.MethodUniqueIdentifier, double> availableJitTimePerMethod)
+        private Dictionary<MethodUniqueIdentifier, QuantumTimeInfo> ZipResults(
+            Dictionary<MethodUniqueIdentifier, double> jitTimeUsedPerMethod,
+            Dictionary<MethodUniqueIdentifier, double> availableJitTimePerMethod)
         {
             return (from methodUniqueId in jitTimeUsedPerMethod.Keys
                     let jitTime = jitTimeUsedPerMethod[methodUniqueId]
                     let quantumTime = availableJitTimePerMethod[methodUniqueId]
-                    select new KeyValuePair<ETWData.MethodUniqueIdentifier, QuantumTimeInfo>(
+                    select new KeyValuePair<MethodUniqueIdentifier, QuantumTimeInfo>(
                         methodUniqueId,
                         new QuantumTimeInfo(jitTime, quantumTime)))
                     .ToDictionary(x => x.Key, x => x.Value);

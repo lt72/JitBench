@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
-using MusicStore.ETWLogAnalyzer.AbstractBases;
+using MusicStore.ETWLogAnalyzer.Abstractions;
 
 namespace MusicStore.ETWLogAnalyzer.ReportVisitors
 {
-    public class JitTimeAccumulatorVisitor : EventVisitor<Dictionary<ETWData.MethodUniqueIdentifier, double>>
+    public class JitTimeAccumulatorVisitor : EventVisitor<Dictionary<MethodUniqueIdentifier, double>>
     {
         private enum InternalState { Ready, JitRunning, JitFinished };
         
@@ -26,7 +26,7 @@ namespace MusicStore.ETWLogAnalyzer.ReportVisitors
         {
             _internalState = InternalState.Ready;
             _lastStart = 0;
-            Result = new Dictionary<ETWData.MethodUniqueIdentifier, double>();
+            Result = new Dictionary<MethodUniqueIdentifier, double>();
             _threadId = threadId;
             AddRelevantTypes(RelevantTypes);
         }
@@ -62,8 +62,7 @@ namespace MusicStore.ETWLogAnalyzer.ReportVisitors
                 }
 
                 _accumulator += jitEndEv.TimeStampRelativeMSec - _lastStart;
-                Result.Add(
-                    new ETWData.MethodUniqueIdentifier(_methodJitting), _accumulator);
+                Result.Add(new MethodUniqueIdentifier(_methodJitting), _accumulator);
 
                 _internalState = InternalState.JitFinished;
                 _methodJitting = null;

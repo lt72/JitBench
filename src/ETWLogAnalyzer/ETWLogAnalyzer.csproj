@@ -52,11 +52,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Abstractions\Helpers\MethodUniqueIdentifier.cs" />
+    <Compile Include="Abstractions\Model\EventModelBase.cs" />
     <Compile Include="CmdLine.cs" />
     <Compile Include="Controller.cs" />
     <Compile Include="ETWData\ETWHelpers.cs" />
     <Compile Include="ETWData\ETWData.cs" />
-    <Compile Include="Abstractions\Filter\EventFilterBase.cs" />
+    <Compile Include="Abstractions\Filters\EventFilterBase.cs" />
     <Compile Include="EventFilters\ThreadIDFilter.cs" />
     <Compile Include="EventFilters\IOFilter.cs" />
     <Compile Include="EventFilters\ThreadCSwitchFilter.cs" />
@@ -69,7 +71,7 @@
     <Compile Include="ReportWriters\PlainTextWriter.cs" />
     <Compile Include="ReportWriters\TextReportWriter.cs" />
     <Compile Include="ReportVisitors\AvailableQuantumAccumulatorVisitor.cs" />
-    <Compile Include="Abstractions\ReportVisitor\EventVisitorBase.cs" />
+    <Compile Include="Abstractions\ReportVisitors\EventVisitorBase.cs" />
     <Compile Include="ReportVisitors\JitTimeAccumulatorVisitor.cs" />
   </ItemGroup>
   <ItemGroup>

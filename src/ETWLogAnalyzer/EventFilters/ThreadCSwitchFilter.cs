@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using MusicStore.ETWLogAnalyzer.AbstractBases;
+using MusicStore.ETWLogAnalyzer.Abstractions;
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 

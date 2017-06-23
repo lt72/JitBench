@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
-using MusicStore.ETWLogAnalyzer.AbstractBases;
+using MusicStore.ETWLogAnalyzer.Abstractions;
 
 namespace MusicStore.ETWLogAnalyzer.ReportVisitors
 {
-    public class PerceivedJitTimeVisitor : EventVisitor<Dictionary<ETWData.MethodUniqueIdentifier, double>>
+    public class PerceivedJitTimeVisitor : EventVisitor<Dictionary<MethodUniqueIdentifier, double>>
     {
         private static readonly List<Type> RelevantTypes = new List<Type> {
             typeof(PARSERS.Clr.MethodJittingStartedTraceData),
@@ -19,7 +19,7 @@ namespace MusicStore.ETWLogAnalyzer.ReportVisitors
         public PerceivedJitTimeVisitor(int threadId) : base()
         {
             _threadId = threadId;
-            Result = new Dictionary<ETWData.MethodUniqueIdentifier, double>();
+            Result = new Dictionary<MethodUniqueIdentifier, double>();
             _methodToJitStart = new Dictionary<long, PARSERS.Clr.MethodJittingStartedTraceData>();
             AddRelevantTypes(RelevantTypes);
         }
@@ -38,7 +38,7 @@ namespace MusicStore.ETWLogAnalyzer.ReportVisitors
                     return;
                 }
 
-                Result.Add(new ETWData.MethodUniqueIdentifier(jitEndEv), 
+                Result.Add(new MethodUniqueIdentifier(jitEndEv), 
                     jitEndEv.TimeStampRelativeMSec - matchJitStart.TimeStampRelativeMSec);
             }
         }

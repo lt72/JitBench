@@ -46,11 +46,12 @@ namespace MusicStore.ETWLogAnalyzer
             
             // Find process of interest, there may be multiple, and we only want to look at the child-most one.
 
-            PARSERS.Kernel.ProcessTraceData put = FindChildmostPutStart(etwLogFile);
+            (var putStart, var putEnd) = FindChildmostPutStartAndEnd(etwLogFile);
             
-            if (put == null)
+            if (putStart == null || putEnd == null)
             {
-                Console.WriteLine($"...could not find dotnet.exe process in ETW log file '{etwLogFile}'!");
+                var processUnderTest = CmdLine.Arguments[CmdLine.PUTSwitch].Value;
+                Console.WriteLine($"Process {processUnderTest} is not a transient process within ETW log file '{etwLogFile}'!");
                 return 1;
             }
             
@@ -58,7 +59,7 @@ namespace MusicStore.ETWLogAnalyzer
 
             Console.WriteLine("...analyzing data...");
 
-            ETWData data = GenerateModel(put);
+            ETWData data = GenerateModel(putStart, putEnd);
             
             // Generate some reports
 
@@ -74,15 +75,16 @@ namespace MusicStore.ETWLogAnalyzer
         private static void GenerateReports(ETWData etwData)
         {
             Controller.RegisterReports(new List<Type> {
-                typeof(ThreadStatistics)
+                typeof(ThreadStatistics),
+                typeof(JitStatistics)
             });
 
             Controller.ProcessReports(CmdLine.Arguments[CmdLine.OutputPathSwitch].Value, etwData);
         }
 
-        private static ETWData GenerateModel(PARSERS.Kernel.ProcessTraceData put)
+        private static ETWData GenerateModel(PARSERS.Kernel.ProcessTraceData putStart, PARSERS.Kernel.ProcessTraceData putEnd)
         {
-            var events = new Helpers.ETWEventsHolder(put.ProcessID);
+            var events = new Helpers.ETWEventsHolder(putStart.ProcessID);
             using (var source = new TRACING.ETWTraceEventSource(CmdLine.Arguments[CmdLine.EtwLogSwitch].Value))
             {
                 // Kernel events
@@ -190,7 +192,7 @@ namespace MusicStore.ETWLogAnalyzer
                 source.Process();
             }
 
-            return new ETWData(put, events);
+            return new ETWData(putStart, putEnd, events);
         }
 
         // Helpers
@@ -200,54 +202,57 @@ namespace MusicStore.ETWLogAnalyzer
             return name.Replace('\\', '/');
         }
 
-        private static PARSERS.Kernel.ProcessTraceData FindChildmostPutStart(string etwLogFile)
+        private static (PARSERS.Kernel.ProcessTraceData, PARSERS.Kernel.ProcessTraceData) FindChildmostPutStartAndEnd(string etwLogFile)
         {
-            //
             // Host may spawn more than one dotnet process. We only need to look 
-            // at the child process that actually hosts MusicStore.dll.
-            //
-
+            // at the child process that actually hosts the program.
             var processUnderTest = CmdLine.Arguments[CmdLine.PUTSwitch].Value;
 
-            var processes = new Dictionary<int, PARSERS.Kernel.ProcessTraceData>();
+            var processStarts = new Dictionary<int, PARSERS.Kernel.ProcessTraceData>();
+            var processStops = new Dictionary<int, PARSERS.Kernel.ProcessTraceData>();
             using (var source = new TRACING.ETWTraceEventSource(etwLogFile))
             {
-                //
-                // Look through kernel events, and specifically the Process/Start events
-                //
+                // Process/Start or Process/Stop events lookup
                 var kernelParser = new PARSERS.KernelTraceEventParser(source);
 
                 kernelParser.ProcessStart += delegate (PARSERS.Kernel.ProcessTraceData proc)
                 {
-                    if (FilterProcessByName(proc, processUnderTest)) return;
+                    if (FilterProcessByName(proc, processUnderTest))
+                    {
+                        return;
+                    }
 
-                    //
                     // Could be the father or child process, accumulate all instances for later analysis. 
-                    // Use the pid of the parent process as the key in the lookup. 
-                    //
-                    processes.Add(proc.ParentID, (PARSERS.Kernel.ProcessTraceData)proc.Clone());
+                    // Use the pid of the parent process as the key in the lookup.
+                    processStarts.Add(proc.ParentID, (PARSERS.Kernel.ProcessTraceData)proc.Clone());
+                };
+
+                // Defunct might be a better metric...
+                kernelParser.ProcessStop += delegate (PARSERS.Kernel.ProcessTraceData proc)
+                {
+                    // Can't filter by process name here. For some reason stop events seem to lack the process name.
+                    processStops.Add(proc.ProcessID, (PARSERS.Kernel.ProcessTraceData)proc.Clone());
                 };
 
                 source.Process();
             }
 
-            //
-            // The process we are interested in is the last child. 
-            // It will have no parent
-            //
-            PARSERS.Kernel.ProcessTraceData put = null;
-            foreach (var proc in processes.Values)
+            // The process we are interested in is the childmost. 
+            // So its process ID shouldn't be a key
+            PARSERS.Kernel.ProcessTraceData putStart = null;
+            PARSERS.Kernel.ProcessTraceData putStop = null;
+
+            foreach (var proc in processStarts.Values)
             {
-                if (!processes.ContainsKey(proc.ProcessID))
+                if (!processStarts.ContainsKey(proc.ProcessID))
                 {
-                    //
-                    // Found a process that is not a parent of any other process
-                    //
-                    put = proc; break;
+                    putStart = proc;
+                    processStops.TryGetValue(proc.ProcessID, out putStop);
+                    break;
                 }
             }
 
-            return put;
+            return (putStart, putStop);
         }
 
         private static bool FilterProcessByName(TRACING.TraceEvent proc, string processUnderTest)

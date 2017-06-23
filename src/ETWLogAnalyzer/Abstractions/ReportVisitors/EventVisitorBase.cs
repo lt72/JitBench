@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using TRACING = Microsoft.Diagnostics.Tracing;
 
-namespace MusicStore.ETWLogAnalyzer.AbstractBases
+namespace MusicStore.ETWLogAnalyzer.Abstractions
 {
     public abstract class EventVisitor<T>
     {
