@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26510.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.ETWLogAnalyzer.Abstractions", "Microsoft.ETWLogAnalyzer.Abstractions\Microsoft.ETWLogAnalyzer.Abstractions.csproj", "{E94F756C-7F83-49B2-9F6A-B99AB3150066}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.ETWLogAnalyzer.Core", "Microsoft.ETWLogAnalyzer.Core\Microsoft.ETWLogAnalyzer.Core.csproj", "{9D151A66-E99A-4532-BC4C-A44DE32A4D79}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.ETWLogAnalyzer.Reports", "Microsoft.ETWLogAnalyzer.Reports\Microsoft.ETWLogAnalyzer.Reports.csproj", "{400F518B-DDC0-408A-A008-16895E20FE27}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.ETWLogAnalyzer.Sample", "Microsoft.ETWLogAnalyzer.Sample\Microsoft.ETWLogAnalyzer.Sample.csproj", "{299A0436-79F4-4D23-B5F9-ADC0D3CC4D85}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E94F756C-7F83-49B2-9F6A-B99AB3150066}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E94F756C-7F83-49B2-9F6A-B99AB3150066}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E94F756C-7F83-49B2-9F6A-B99AB3150066}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E94F756C-7F83-49B2-9F6A-B99AB3150066}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9D151A66-E99A-4532-BC4C-A44DE32A4D79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9D151A66-E99A-4532-BC4C-A44DE32A4D79}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9D151A66-E99A-4532-BC4C-A44DE32A4D79}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9D151A66-E99A-4532-BC4C-A44DE32A4D79}.Release|Any CPU.Build.0 = Release|Any CPU
+		{400F518B-DDC0-408A-A008-16895E20FE27}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{400F518B-DDC0-408A-A008-16895E20FE27}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{400F518B-DDC0-408A-A008-16895E20FE27}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{400F518B-DDC0-408A-A008-16895E20FE27}.Release|Any CPU.Build.0 = Release|Any CPU
+		{299A0436-79F4-4D23-B5F9-ADC0D3CC4D85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{299A0436-79F4-4D23-B5F9-ADC0D3CC4D85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{299A0436-79F4-4D23-B5F9-ADC0D3CC4D85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{299A0436-79F4-4D23-B5F9-ADC0D3CC4D85}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
