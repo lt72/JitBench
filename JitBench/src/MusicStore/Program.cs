@@ -37,7 +37,6 @@ namespace MusicStore
             var host = builder.Build();
 
             host.Start();
-
             Instrumentation.Logger.Log.ServerStarted();
 
             totalTime.Stop();
@@ -60,7 +59,7 @@ namespace MusicStore
                 Console.WriteLine("Cold start time (server start + first request time): {0}ms", serverStartupTime + firstRequestTime);
                 Console.WriteLine();
                 Console.WriteLine();
-
+                
                 var minRequestTime = long.MaxValue;
                 var maxRequestTime = long.MinValue;
                 var averageRequestTime = 0.0;
@@ -73,7 +72,6 @@ namespace MusicStore
                     requestTime.Stop();
 
                     Instrumentation.Logger.Log.RequestBatchServed(1);
-
                     var requestTimeElapsed = requestTime.ElapsedMilliseconds;
                     if (requestTimeElapsed < minRequestTime)
                     {
