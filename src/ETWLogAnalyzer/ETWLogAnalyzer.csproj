@@ -41,6 +41,9 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.ValueTuple, Version=4.0.1.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\System.ValueTuple.4.3.1\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -49,21 +52,27 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Abstractions\Helpers\MethodUniqueIdentifier.cs" />
+    <Compile Include="Abstractions\Model\EventModelBase.cs" />
     <Compile Include="CmdLine.cs" />
-    <Compile Include="ETWData\ETWData_Jit.cs" />
-    <Compile Include="ETWData\ETWData_Threads.cs" />
+    <Compile Include="Controller.cs" />
+    <Compile Include="ETWData\ETWHelpers.cs" />
     <Compile Include="ETWData\ETWData.cs" />
-    <Compile Include="EventFilters\EventFilterBase.cs" />
+    <Compile Include="Abstractions\Filters\EventFilterBase.cs" />
     <Compile Include="EventFilters\ThreadIDFilter.cs" />
     <Compile Include="EventFilters\IOFilter.cs" />
     <Compile Include="EventFilters\ThreadCSwitchFilter.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Abstractions\Reports\ReportBase.cs" />
     <Compile Include="Reports\JitStatistics.cs" />
-    <Compile Include="Reports\ReportBase.cs" />
     <Compile Include="Reports\ThreadStatistics.cs" />
-    <Compile Include="ReportWriters\TextReportWriter.cs" />
+    <Compile Include="ReportVisitors\PerceivedJitTimeVisitor.cs" />
     <Compile Include="ReportWriters\PlainTextWriter.cs" />
+    <Compile Include="ReportWriters\TextReportWriter.cs" />
+    <Compile Include="ReportVisitors\AvailableQuantumAccumulatorVisitor.cs" />
+    <Compile Include="Abstractions\ReportVisitors\EventVisitorBase.cs" />
+    <Compile Include="ReportVisitors\JitTimeAccumulatorVisitor.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

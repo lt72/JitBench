@@ -9,6 +9,9 @@ nuget restore
 pushd src\ETWLogAnalyzer
 devenv ETWLogAnalyzer.csproj /Build %CONFIGURATION%
 bin\%CONFIGURATION%\MusicStore.ETWLogAnalyzer /put=dotnet /etwLog=%BASEDIR%\src\MusicStore\bin\Release\netcoreapp2.0\publish\PerfViewData.etl /out-dir=E:/Reports
+REM %BASEDIR%\src\MusicStore\bin\Release\netcoreapp2.0\publish
+REM E:\JitBench\src\MusicStore\bin\Release\netcoreapp2.0\publish
+REM E:\test-app\test-app\bin\Release\netcoreapp1.1
 popd
 
 

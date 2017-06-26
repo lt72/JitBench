@@ -45,3 +45,5 @@ project.lock.json
 .testpublish/
 launchSettings.json
 global.json
+*PerfViewData.log.txt
+*.exe

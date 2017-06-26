@@ -1,14 +1,14 @@
-﻿using System.IO;
-
-namespace MusicStore.ETWLogAnalyzer
+﻿namespace MusicStore.ETWLogAnalyzer.Abstractions
 {
-    internal abstract class ReportBase 
+    public abstract class ReportBase 
     {
+        public string Name { get; protected set; }
+
         protected ReportBase()
         {
         }
 
-        public abstract ReportBase Analyze(ETWData data);
+        public abstract ReportBase Analyze(EventModelBase data);
 
         public abstract void Persist(ReportWriters.TextReportWriter writer, bool dispose);
 

@@ -1,10 +1,10 @@
-﻿using TRACING = Microsoft.Diagnostics.Tracing;
-using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using TRACING = Microsoft.Diagnostics.Tracing;
+using MusicStore.ETWLogAnalyzer.Abstractions;
 
 namespace MusicStore.ETWLogAnalyzer.EventFilters
 {
-    internal class ThreadIDFilter : IEventFilter
+    public class ThreadIDFilter : IEventFilter
     {
         private int _pid;
 

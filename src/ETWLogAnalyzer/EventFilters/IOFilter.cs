@@ -4,14 +4,15 @@ using System.Diagnostics;
 
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
+using MusicStore.ETWLogAnalyzer.Abstractions;
 
 namespace MusicStore.ETWLogAnalyzer.EventFilters
 {
-    class IOFilter : IEventFilter
+    public class IOFilter : IEventFilter
     {
         // TODO: Double check on opcode, there's more than one read one... 
-        static TRACING.TraceEventOpcode READ = (TRACING.TraceEventOpcode)10;
-        static TRACING.TraceEventOpcode READ_INIT = (TRACING.TraceEventOpcode)12;
+        // public static TRACING.TraceEventOpcode READ = (TRACING.TraceEventOpcode)10;
+        // public static TRACING.TraceEventOpcode READ_INIT = (TRACING.TraceEventOpcode)12;
         private int _pidUnderTest;
         private Dictionary<UInt64, int> _IRPToThread;
 
@@ -36,8 +37,7 @@ namespace MusicStore.ETWLogAnalyzer.EventFilters
                 relevantThreadList = new List<int>();
                 // Try to report the thread that issued the request matched by IRP
                 // otherwise log the thread reported in the request finish event.
-                int relevantThreadId;
-                if (!_IRPToThread.TryGetValue(ioFinishEv.Irp, out relevantThreadId))
+                if (!_IRPToThread.TryGetValue(ioFinishEv.Irp, out int relevantThreadId))
                 {
                     _IRPToThread.Remove(ioFinishEv.Irp);
                 }

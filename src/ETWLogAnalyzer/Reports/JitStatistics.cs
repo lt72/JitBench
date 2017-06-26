@@ -1,73 +1,124 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using MusicStore.ETWLogAnalyzer.Abstractions;
+using MusicStore.ETWLogAnalyzer.ReportVisitors;
 using MusicStore.ETWLogAnalyzer.ReportWriters;
-
-using TRACING = Microsoft.Diagnostics.Tracing;
 
 namespace MusicStore.ETWLogAnalyzer.Reports
 {
-    class JitStatistics : ReportBase
+    public class JitStatistics : ReportBase
     {
-        class ThreadJitInfo
+        private class JitTimeInfo
         {
-            public int MethodCount = 0;
-            public double EffectiveTime = 0;
-            public double NominalTime = 0;
-            public List<ETWData.JitEvent> MethodJitList { get; internal set; }
-            public double Efficiency { get => (NominalTime == 0) ? 1 : EffectiveTime / NominalTime; }
+            public double JitTimeUsed { get; private set; }
+            public double PerceivedJitTime { get; private set; }
+
+            public JitTimeInfo(double effectiveTime, double nominalTime)
+            {
+                JitTimeUsed = effectiveTime;
+                PerceivedJitTime = nominalTime;
+            }
         }
 
-        private readonly Dictionary<int, ThreadJitInfo> _threadJitInfoList;
-        
+        private static readonly string FormatString = "{0, -35}:\t{1,9}";
+
+        private Dictionary<int, Dictionary<MethodUniqueIdentifier, JitTimeInfo>> _methodJitStatsPerThread;
+
         public JitStatistics()
         {
-            _threadJitInfoList = new Dictionary<int, ThreadJitInfo>();
+            _methodJitStatsPerThread = new Dictionary<int, Dictionary<MethodUniqueIdentifier, JitTimeInfo>>();
+            Name = "jit_time_stats.txt";
         }
 
-        public override ReportBase Analyze(ETWData data)
+        public override ReportBase Analyze(EventModelBase data)
         {
-            foreach (int threadId in data.ThreadList)
+            foreach (int threadId in data.GetThreadList)
             {
-                List<ETWData.JitEvent> jitEventList = data.GetJitInfoForThread(threadId);
-                var jitInfo = new ThreadJitInfo();
-                jitInfo.MethodCount = jitEventList.Count;
-                jitInfo.MethodJitList = jitEventList;
+                var jitTimeVisitor = new JitTimeAccumulatorVisitor(threadId);
+                var perceivedJitTimeVisitor = new PerceivedJitTimeVisitor(threadId);
 
-                foreach(var jitEvent in jitEventList)
-                {
-                    jitInfo.NominalTime += jitEvent.Duration;
-                    jitInfo.EffectiveTime += data.GetEffectiveJitTime(jitEvent);
-                }
+                Controller.RunVisitorForResult(jitTimeVisitor, data.GetThreadTimeline(threadId));
+                Controller.RunVisitorForResult(perceivedJitTimeVisitor, data.GetThreadTimeline(threadId));
 
-                _threadJitInfoList.Add(threadId, jitInfo);
+                System.Diagnostics.Debug.Assert(jitTimeVisitor.State != EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error
+                    && perceivedJitTimeVisitor.State != EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error);
+
+                _methodJitStatsPerThread.Add(threadId,
+                    ZipResults(jitTimeVisitor.Result, perceivedJitTimeVisitor.Result));
             }
             return this;
         }
 
         public override void Persist(TextReportWriter writer, bool dispose)
         {
-            writer.WriteTitle("Jitting statistics");
-            writer.Write($"\nThe process used {_threadJitInfoList.Count} thread(s) as follows:");
-            var formatString = "{0,-35}:\t{1,9}";
+            writer.WriteTitle("Jit time statistics per thread");
+            writer.Write($"\nThe process used {_methodJitStatsPerThread.Count} thread(s) as follows:");
 
-            foreach (var threadInfo in _threadJitInfoList)
+            foreach (var threadInfo in _methodJitStatsPerThread)
             {
-                writer.WriteHeader("Thread " + threadInfo.Key.ToString());
+                JitTimeInfo threadJitTimes = AccumulateMethodTimes(threadInfo.Value);
+                var efficiency = (threadJitTimes.PerceivedJitTime == 0) ?
+                    100 :
+                    threadJitTimes.JitTimeUsed / threadJitTimes.PerceivedJitTime * 100;
+
+                writer.WriteHeader("Thread " + threadInfo.Key);
                 writer.AddIndentationLevel();
-
-                var jitInfoForThread = threadInfo.Value;
-                writer.WriteLine(String.Format(formatString, "Methods jitted [-]", jitInfoForThread.MethodCount));
-                writer.WriteLine(String.Format(formatString, "Nominal thread jit time [ms]", jitInfoForThread.NominalTime));
-                writer.WriteLine(String.Format(formatString, "Effective thread jit time [ms]", jitInfoForThread.EffectiveTime));
-                writer.WriteLine(String.Format(formatString, "Jit Efficiency [%]", jitInfoForThread.Efficiency * 100));
-
+                writer.WriteLine(String.Format(FormatString, "Effective jitting time [ms]", threadJitTimes.JitTimeUsed));
+                writer.WriteLine(String.Format(FormatString, "Perceived jitting time [ms]", threadJitTimes.PerceivedJitTime));
+                writer.WriteLine(String.Format(FormatString, "Jit time usage efficiency [%]", efficiency));
                 writer.RemoveIndentationLevel();
+            }
+
+            writer.SkipLine();
+            writer.SkipLine();
+
+            writer.WriteTitle("Jitting statistics per method");
+
+            foreach (var methodsInThread in _methodJitStatsPerThread.Values)
+            {
+                foreach (var methodIdJitTimePair in methodsInThread)
+                {
+                    writer.WriteHeader("Method " + methodIdJitTimePair.Key);
+
+                    writer.AddIndentationLevel();
+
+                    double jitTime = methodIdJitTimePair.Value.JitTimeUsed;
+                    double perceivedTime = methodIdJitTimePair.Value.PerceivedJitTime;
+                    writer.WriteLine(String.Format(FormatString, "Effective jitting time [ms]", jitTime));
+                    writer.WriteLine(String.Format(FormatString, "Perceived jitting time [ms]", perceivedTime));
+                    writer.WriteLine(String.Format(FormatString, "Jit time usage efficiency [%]", 100.0 * jitTime / perceivedTime));
+
+                    writer.RemoveIndentationLevel();
+                }
             }
 
             if (dispose)
             {
                 writer.Dispose();
             }
+        }
+
+        // Helpers
+
+        private JitTimeInfo AccumulateMethodTimes(Dictionary<MethodUniqueIdentifier, JitTimeInfo> threadMethodJitTimes)
+        {
+            double threadJitTime = threadMethodJitTimes.Values.Aggregate(0.0, (accumulator, value) => accumulator + value.JitTimeUsed);
+            double threadPerceivdJitTime = threadMethodJitTimes.Values.Aggregate(0.0, (accumulator, value) => accumulator + value.PerceivedJitTime);
+            return new JitTimeInfo(threadJitTime, threadPerceivdJitTime);
+        }
+        
+        private Dictionary<MethodUniqueIdentifier, JitTimeInfo> ZipResults(
+            Dictionary<MethodUniqueIdentifier, double> jitTimeUsedPerMethod,
+            Dictionary<MethodUniqueIdentifier, double> perceivedJitTimesPerMethod)
+        {
+            return (from methodUniqueId in jitTimeUsedPerMethod.Keys
+                    let effectiveTime = jitTimeUsedPerMethod[methodUniqueId]
+                    let perceivedTime = perceivedJitTimesPerMethod[methodUniqueId]
+                    select new KeyValuePair<MethodUniqueIdentifier, JitTimeInfo>(
+                        methodUniqueId,
+                        new JitTimeInfo(effectiveTime, perceivedTime)))
+                    .ToDictionary(x => x.Key, x => x.Value);
         }
     }
 }

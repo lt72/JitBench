@@ -1,9 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace MusicStore.ETWLogAnalyzer.ReportWriters
 {
-    public class TextReportWriter : IDisposable
+    internal class TextReportWriter : IDisposable
     {
         private readonly TextWriter _stream;
         private int _intendationOffset;
@@ -42,14 +46,14 @@ namespace MusicStore.ETWLogAnalyzer.ReportWriters
 
         public virtual void WriteHeader(string text)
         {
-            WriteOffset();
+            writeOffset();
             this.SkipLine();
             this.SkipLine();
             this.WriteLine(text);
             this.SkipLine();
         }
 
-        public virtual void WriteOffset()
+        public virtual void writeOffset()
         {
             _stream.Write(new String('\t', _intendationOffset));
         }
@@ -60,7 +64,7 @@ namespace MusicStore.ETWLogAnalyzer.ReportWriters
 
         public virtual void Write(string text)
         {
-            WriteOffset();
+            writeOffset();
             _stream.Write(text);
         }
 
@@ -71,7 +75,7 @@ namespace MusicStore.ETWLogAnalyzer.ReportWriters
 
         public virtual void WriteLine(string text)
         {
-            WriteOffset();
+            writeOffset();
             _stream.WriteLine(text);
         }
     }
