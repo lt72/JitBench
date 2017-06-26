@@ -30,13 +30,15 @@ namespace Microsoft.ETWLogAnalyzer.Framework
             
             foreach (System.Type reportType in _reportList)
             {
-                if (reportType.IsSubclassOf(typeof(ReportBase)))
+                if (!reportType.IsSubclassOf(typeof(ReportBase)))
                 {
                     continue;
                 }
 
                 var reportInstance = System.Activator.CreateInstance(reportType) as ReportBase;
                 System.Diagnostics.Debug.Assert(reportInstance != null);
+
+                System.Console.WriteLine($"Writing report {reportInstance.Name} to {baseFolder}...");
 
                 reportInstance.Analyze(etwData).Persist(
                     new ReportWriters.PlainTextWriter(System.IO.Path.Combine(baseFolder, reportInstance.Name)), true);
