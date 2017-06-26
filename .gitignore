@@ -30,7 +30,7 @@ PublishProfiles/
 *.log
 *.vspx
 /.symbols
-nuget.exe
+xppurge.exe
 *net45.csproj
 *k10.csproj
 App_Data/
