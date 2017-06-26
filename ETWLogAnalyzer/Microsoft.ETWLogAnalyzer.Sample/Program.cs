@@ -5,6 +5,7 @@ using System.IO;
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.ETWLogAnalyzer.Reports;
+using Microsoft.ETWLogAnalyzer.Framework;
 
 namespace Microsoft.ETWLogAnalyzer
 {
@@ -83,7 +84,7 @@ namespace Microsoft.ETWLogAnalyzer
 
         private static ETWData GenerateModel(PARSERS.Kernel.ProcessTraceData putStart, PARSERS.Kernel.ProcessTraceData putEnd)
         {
-            var events = new Helpers.ETWEventsHolder(putStart.ProcessID);
+            var events = new Framework.Helpers.ETWEventsHolder(putStart.ProcessID);
             using (var source = new TRACING.ETWTraceEventSource(CmdLine.Arguments[CmdLine.EtwLogSwitch].Value))
             {
                 // Kernel events

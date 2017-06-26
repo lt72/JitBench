@@ -6,7 +6,7 @@ using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.ETWLogAnalyzer.EventFilters;
 using Microsoft.ETWLogAnalyzer.Abstractions;
 
-namespace Microsoft.ETWLogAnalyzer.Helpers
+namespace Microsoft.ETWLogAnalyzer.Framework.Helpers
 {
     public class ETWEventsHolder
     {

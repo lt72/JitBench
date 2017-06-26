@@ -2,7 +2,7 @@
 using TRACING = Microsoft.Diagnostics.Tracing;
 using Microsoft.ETWLogAnalyzer.Abstractions;
 
-namespace Microsoft.ETWLogAnalyzer
+namespace Microsoft.ETWLogAnalyzer.Framework
 {
     public static class Controller
     {

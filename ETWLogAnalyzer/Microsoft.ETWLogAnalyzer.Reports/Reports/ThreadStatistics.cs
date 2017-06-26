@@ -5,6 +5,7 @@ using System.Linq;
 using Microsoft.ETWLogAnalyzer.ReportWriters;
 using Microsoft.ETWLogAnalyzer.Abstractions;
 using Microsoft.ETWLogAnalyzer.ReportVisitors;
+using Microsoft.ETWLogAnalyzer.Framework;
 
 namespace Microsoft.ETWLogAnalyzer.Reports
 {
