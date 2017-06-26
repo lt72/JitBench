@@ -7,7 +7,7 @@ using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 
 
-namespace Microsoft.ETWLogAnalyzer
+namespace Microsoft.ETWLogAnalyzer.Framework
 {
     public class ETWData : EventModelBase
     {
