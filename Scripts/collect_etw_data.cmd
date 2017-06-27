@@ -45,8 +45,9 @@ cd "%APPDIR%"
 "%DOTNET%" restore
 "%DOTNET%" publish -c %CONFIGURATION% -f netcoreapp2.0
 
-IF "%1"=="clean" ( "%PFUTIL%" -prefetch 0
-	"%PFUTIL%"
+IF "%1"=="clean" (
+	"%PFUTIL%" -prefetch 0
+	"%PFUTIL%" -purge
 )
 
 cd "%ETLFOLDER%"

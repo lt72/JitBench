@@ -118,15 +118,15 @@ namespace Microsoft.ETWLogAnalyzer
                 // I/O
 
                 // File API's are ignored for now. We care about blocking I/O (where non-memory reads are necessary).
-                kernelParser.AddCallbackForEvents(delegate (PARSERS.Kernel.DiskIOTraceData data)
+                kernelParser.DiskIORead += delegate (PARSERS.Kernel.DiskIOTraceData data)
                 {
                     events.StoreIfRelevant(data);
-                });
+                };
 
-                kernelParser.AddCallbackForEvents(delegate (PARSERS.Kernel.DiskIOInitTraceData data)
+                kernelParser.DiskIOReadInit += delegate (PARSERS.Kernel.DiskIOInitTraceData data)
                 {
                     events.StoreIfRelevant(data);
-                });
+                };
                                 
                 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 

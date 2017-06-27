@@ -10,9 +10,6 @@ namespace Microsoft.ETWLogAnalyzer.EventFilters
 {
     public class IOFilter : IEventFilter
     {
-        // TODO: Double check on opcode, there's more than one read one... 
-        // public static TRACING.TraceEventOpcode READ = (TRACING.TraceEventOpcode)10;
-        // public static TRACING.TraceEventOpcode READ_INIT = (TRACING.TraceEventOpcode)12;
         private int _pidUnderTest;
         private Dictionary<UInt64, int> _IRPToThread;
 
