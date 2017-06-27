@@ -4,7 +4,6 @@ using System.IO;
 
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.ETWLogAnalyzer.Reports;
 using Microsoft.ETWLogAnalyzer.Framework;
 
 namespace Microsoft.ETWLogAnalyzer
