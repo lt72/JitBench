@@ -46,12 +46,12 @@ namespace Microsoft.ETWLogAnalyzer
             Console.WriteLine($"Opening ETW log file '{etwLogFile}'...");
             
             // Find process of interest, there may be multiple, and we only want to look at the child-most one.
-            (var putStart, var putEnd) = FindChildmostPutStartAndEnd(etwLogFile);
+            (var targetStart, var targetEnd) = FindChildmostTargetStartAndEnd(etwLogFile);
             
-            if (putStart == null || putEnd == null)
+            if (targetStart == null || targetEnd == null)
             {
-                var processUnderTest = CmdLine.Arguments[CmdLine.PUTSwitch].Value;
-                Console.WriteLine($"Process {processUnderTest} is not a transient process within ETW log file '{etwLogFile}'!");
+                var target = CmdLine.Arguments[CmdLine.TargetProcessSwitch].Value;
+                Console.WriteLine($"Process {target} is not a transient process within ETW log file '{etwLogFile}'!");
                 return 1;
             }
             
@@ -59,27 +59,22 @@ namespace Microsoft.ETWLogAnalyzer
 
             Console.WriteLine("...analyzing data...");
 
-            ETWData data = GenerateModel(putStart, putEnd);
+            ETWData data = GenerateModel(targetStart, targetEnd);
             
             // Generate some reports
 
             Console.WriteLine("...Generating reports...");
 
-            GenerateReports(data);
+            GenerateReports(CmdLine.Arguments[CmdLine.ReportPathSwitch].Value, CmdLine.Arguments[CmdLine.OutputPathSwitch].Value, data);
 
             Console.WriteLine("...done!");
 
             return 0;
         }
 
-        private static void GenerateReports(ETWData etwData)
+        private static void GenerateReports(string reportsPath, string outputPath, ETWData etwData)
         {
-            Controller.RegisterReports(new List<Type> {
-                typeof(ThreadStatistics),
-                typeof(JitStatistics)
-            });
-
-            Controller.ProcessReports(CmdLine.Arguments[CmdLine.OutputPathSwitch].Value, etwData);
+            Controller.ProcessReports(reportsPath, outputPath, etwData);
         }
 
         private static ETWData GenerateModel(PARSERS.Kernel.ProcessTraceData putStart, PARSERS.Kernel.ProcessTraceData putEnd)
@@ -202,11 +197,11 @@ namespace Microsoft.ETWLogAnalyzer
             return name.Replace('\\', '/');
         }
 
-        private static (PARSERS.Kernel.ProcessTraceData, PARSERS.Kernel.ProcessTraceData) FindChildmostPutStartAndEnd(string etwLogFile)
+        private static (PARSERS.Kernel.ProcessTraceData, PARSERS.Kernel.ProcessTraceData) FindChildmostTargetStartAndEnd(string etwLogFile)
         {
             // Host may spawn more than one dotnet process. We only need to look 
             // at the child process that actually hosts the program.
-            var processUnderTest = CmdLine.Arguments[CmdLine.PUTSwitch].Value;
+            var processUnderTest = CmdLine.Arguments[CmdLine.TargetProcessSwitch].Value;
 
             var processStarts = new Dictionary<int, PARSERS.Kernel.ProcessTraceData>();
             var processStops = new Dictionary<int, PARSERS.Kernel.ProcessTraceData>();

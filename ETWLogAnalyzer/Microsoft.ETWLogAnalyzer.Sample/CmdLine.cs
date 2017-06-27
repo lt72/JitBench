@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 
 namespace Microsoft.ETWLogAnalyzer
 {
@@ -77,15 +78,20 @@ namespace Microsoft.ETWLogAnalyzer
         internal static readonly string HelpSwitch = "/help";
         internal static readonly string HelpDescription = "Shows this help";
         //--//
-        internal static readonly string PUTSwitch = "/put";
-        internal static readonly string PUTExample = "process name, without extension";
-        internal static readonly string PUTDescription = "name of the process to analyze";
-        internal static readonly string PUTDefault = "dotnet";
+        internal static readonly string TargetProcessSwitch = "/target";
+        internal static readonly string TargetExample = "process name, without extension";
+        internal static readonly string TargetDescription = "name of the process to analyze";
+        internal static readonly string TargetDefault = "dotnet";
         //--//
         internal static readonly string EtwLogSwitch = "/etwLog";
         internal static readonly string EtwLogExample = "path to file";
         internal static readonly string EtwLogDescription = "name of the ETW log file to analyze";
         internal static readonly string EtwLogDefault = "." + Path.DirectorySeparatorChar + "PerfViewData.etl.zip";
+        //--//
+        internal static readonly string ReportPathSwitch = "/reportGenerators";
+        internal static readonly string ReportPathExample = "path to a directory";
+        internal static readonly string ReportPathDescription = "path to a folder that contains assemblies to load and inspect for report generators";
+        internal static readonly string ReportPathDefault = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + Path.DirectorySeparatorChar;
         //--//
         internal static readonly string OutputPathSwitch = "/out-dir";
         internal static readonly string OutputPathExample = "Path (absolute, relative, or environment variable) to store reports to.";
@@ -96,9 +102,9 @@ namespace Microsoft.ETWLogAnalyzer
         {
             Arguments.Add(HelpSwitch, Argument.New(HelpSwitch, String.Empty, HelpDescription, String.Empty, String.Empty));
             Arguments.Add(EtwLogSwitch, Argument.New(EtwLogSwitch, EtwLogExample, EtwLogDescription, EtwLogDefault, EtwLogDefault));
-            Arguments.Add(PUTSwitch, Argument.New(PUTSwitch, PUTExample, PUTDescription, PUTDefault, PUTDefault));
-            Arguments.Add(OutputPathSwitch, 
-                Argument.New(OutputPathSwitch, OutputPathExample, OutputPathDescription, OutputPathDefault, OutputPathDefault));
+            Arguments.Add(TargetProcessSwitch, Argument.New(TargetProcessSwitch, TargetExample, TargetDescription, TargetDefault, TargetDefault));
+            Arguments.Add(ReportPathSwitch, Argument.New(ReportPathSwitch, ReportPathExample, ReportPathDescription, ReportPathDefault, ReportPathDefault));
+            Arguments.Add(OutputPathSwitch, Argument.New(OutputPathSwitch, OutputPathExample, OutputPathDescription, OutputPathDefault, OutputPathDefault));
         }
 
         internal static Cmd Process(string[] args)

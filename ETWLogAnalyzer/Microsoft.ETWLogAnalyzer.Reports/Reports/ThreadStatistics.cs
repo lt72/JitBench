@@ -6,10 +6,11 @@ using Microsoft.ETWLogAnalyzer.ReportWriters;
 using Microsoft.ETWLogAnalyzer.Abstractions;
 using Microsoft.ETWLogAnalyzer.ReportVisitors;
 using Microsoft.ETWLogAnalyzer.Framework;
+using System.Diagnostics;
 
 namespace Microsoft.ETWLogAnalyzer.Reports
 {
-    public class ThreadStatistics : ReportBase
+    public class ThreadStatistics : IReport
     {
         private class QuantumTimeInfo
         {
@@ -26,14 +27,15 @@ namespace Microsoft.ETWLogAnalyzer.Reports
         private static readonly string FormatString = "{0, -35}:\t{1,9}";
 
         private Dictionary<int, Dictionary<MethodUniqueIdentifier, QuantumTimeInfo>> _methodJistStatsPerThread;
-                
+
         public ThreadStatistics()
         {
             _methodJistStatsPerThread = new Dictionary<int, Dictionary<MethodUniqueIdentifier, QuantumTimeInfo>>();
-            Name = "quantum_usage_stats.txt";
         }
 
-        public override ReportBase Analyze(EventModelBase data)
+        public string Name => "quantum_usage_stats.txt";
+
+        public IReport Analyze(EventModelBase data)
         {
             foreach (int threadId in data.GetThreadList)
             {
@@ -42,7 +44,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                 Controller.RunVisitorForResult(jitTimeVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(availableQuantumTimeVisitor, data.GetThreadTimeline(threadId));
 
-                System.Diagnostics.Debug.Assert(jitTimeVisitor.State != EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error
+                Debug.Assert(jitTimeVisitor.State != EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error
                     && availableQuantumTimeVisitor.State != EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error);
 
                 _methodJistStatsPerThread.Add(threadId,
@@ -51,7 +53,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             return this;
         }
 
-        public override void Persist(TextReportWriter writer, bool dispose)
+        public void Persist(TextReportWriter writer, bool dispose)
         {
             writer.WriteTitle("Thread Usage with Respect to Jitting");
             writer.Write($"\nThe process used {_methodJistStatsPerThread.Count} thread(s) as follows:");

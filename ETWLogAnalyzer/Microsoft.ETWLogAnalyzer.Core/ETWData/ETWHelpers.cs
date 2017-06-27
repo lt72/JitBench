@@ -5,6 +5,7 @@ using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.ETWLogAnalyzer.EventFilters;
 using Microsoft.ETWLogAnalyzer.Abstractions;
+using System.Diagnostics;
 
 namespace Microsoft.ETWLogAnalyzer.Framework.Helpers
 {
@@ -106,8 +107,8 @@ namespace Microsoft.ETWLogAnalyzer.Framework.Helpers
         /// <param name=""></param>
         private void AddUniqueTime(SortedList<double, TRACING.TraceEvent> eventList, TRACING.TraceEvent ev)
         {
-            System.Diagnostics.Debug.Assert(eventList != null);
-            System.Diagnostics.Debug.Assert(ev != null);
+            Debug.Assert(eventList != null);
+            Debug.Assert(ev != null);
 
             double time = ev.TimeStampRelativeMSec;
 

@@ -5,10 +5,11 @@ using Microsoft.ETWLogAnalyzer.Abstractions;
 using Microsoft.ETWLogAnalyzer.ReportVisitors;
 using Microsoft.ETWLogAnalyzer.ReportWriters;
 using Microsoft.ETWLogAnalyzer.Framework;
+using System.Diagnostics;
 
 namespace Microsoft.ETWLogAnalyzer.Reports
 {
-    public class JitStatistics : ReportBase
+    public class JitStatistics : IReport
     {
         private class JitTimeInfo
         {
@@ -29,10 +30,11 @@ namespace Microsoft.ETWLogAnalyzer.Reports
         public JitStatistics()
         {
             _methodJitStatsPerThread = new Dictionary<int, Dictionary<MethodUniqueIdentifier, JitTimeInfo>>();
-            Name = "jit_time_stats.txt";
         }
 
-        public override ReportBase Analyze(EventModelBase data)
+        public string Name => "jit_time_stats.txt";
+
+        public IReport Analyze(EventModelBase data)
         {
             foreach (int threadId in data.GetThreadList)
             {
@@ -42,7 +44,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                 Controller.RunVisitorForResult(jitTimeVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(perceivedJitTimeVisitor, data.GetThreadTimeline(threadId));
 
-                System.Diagnostics.Debug.Assert(jitTimeVisitor.State != EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error
+                Debug.Assert(jitTimeVisitor.State != EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error
                     && perceivedJitTimeVisitor.State != EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error);
 
                 _methodJitStatsPerThread.Add(threadId,
@@ -51,7 +53,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             return this;
         }
 
-        public override void Persist(TextReportWriter writer, bool dispose)
+        public void Persist(TextReportWriter writer, bool dispose)
         {
             writer.WriteTitle("Jit time statistics per thread");
             writer.Write($"\nThe process used {_methodJitStatsPerThread.Count} thread(s) as follows:");

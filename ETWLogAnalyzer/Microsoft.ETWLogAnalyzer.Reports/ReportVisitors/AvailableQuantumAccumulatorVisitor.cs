@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.ETWLogAnalyzer.Abstractions;
+using System.Diagnostics;
 
 namespace Microsoft.ETWLogAnalyzer.ReportVisitors
 {
@@ -35,7 +36,7 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
 
         public override void Visit(TRACING.TraceEvent ev)
         {
-            System.Diagnostics.Debug.Assert(State != VisitorState.Error);
+            Debug.Assert(State != VisitorState.Error);
             if (ev is PARSERS.Clr.MethodJittingStartedTraceData jitStartEv)
             {
                 _internalState = InternalState.JitRunning;
@@ -63,7 +64,7 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
             }
             else if (ev is PARSERS.Clr.MethodLoadUnloadVerboseTraceData jitEndEv)
             {
-                System.Diagnostics.Debug.Assert(jitEndEv.MethodID == _methodJitting.MethodID);
+                Debug.Assert(jitEndEv.MethodID == _methodJitting.MethodID);
                 if (_internalState != InternalState.JitRunning)
                 {
                     State = VisitorState.Error;
