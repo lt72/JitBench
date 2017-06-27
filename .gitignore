@@ -17,7 +17,7 @@ _ReSharper.*
 *.csproj.user
 *[Rr]e[Ss]harper.user
 _ReSharper.*/
-packages/*
+*/packages/*
 artifacts/*
 msbuild.log
 PublishProfiles/
@@ -30,8 +30,7 @@ PublishProfiles/
 *.log
 *.vspx
 /.symbols
-nuget.exe
-build/
+xppurge.exe
 *net45.csproj
 *k10.csproj
 App_Data/
@@ -46,4 +45,4 @@ project.lock.json
 launchSettings.json
 global.json
 *PerfViewData.log.txt
-*.exe
+*.etl
