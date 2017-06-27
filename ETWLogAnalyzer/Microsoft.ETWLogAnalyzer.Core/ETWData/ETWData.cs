@@ -33,10 +33,25 @@ namespace Microsoft.ETWLogAnalyzer.Framework
 
         private Dictionary<MethodUniqueIdentifier, int> GetMethodToThreadCache()
         {
-            return _overallEvents.Values
-                .Where(ev => ev is PARSERS.Clr.MethodLoadUnloadVerboseTraceData)
-                .Select(ev => ev as PARSERS.Clr.MethodLoadUnloadVerboseTraceData)
-                .ToDictionary(x => new MethodUniqueIdentifier(x), x => x.ThreadID);
+            var methodToThreadCache = new Dictionary<MethodUniqueIdentifier, int>();
+            foreach (var ev in _overallEvents.Values)
+            {
+                if (ev is PARSERS.Clr.MethodLoadUnloadVerboseTraceData loadVerbEv)
+                {
+                    var methodUniqueId = new MethodUniqueIdentifier(loadVerbEv);
+
+                    if (!methodToThreadCache.ContainsKey(methodUniqueId))
+                    {
+                        methodToThreadCache.Add(methodUniqueId, loadVerbEv.ThreadID);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Method {methodUniqueId.ToString()} jitted twice.\n\t" +
+                            $"First in thread {methodToThreadCache[methodUniqueId]}, and again in thread {loadVerbEv.ThreadID}.");
+                    }
+                }
+            }
+            return methodToThreadCache;
         }
 
         /// <summary>
