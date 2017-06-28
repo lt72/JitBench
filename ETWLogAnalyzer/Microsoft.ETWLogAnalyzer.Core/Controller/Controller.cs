@@ -5,6 +5,8 @@ using System.IO;
 using System.Reflection;
 using System;
 using System.Linq;
+using System.Runtime.Serialization;
+using System.Xml.Serialization;
 
 namespace Microsoft.ETWLogAnalyzer.Framework
 {
@@ -78,6 +80,49 @@ namespace Microsoft.ETWLogAnalyzer.Framework
             }
 
             return reports;
+        }
+
+        public static void SerializeDataModel(ETWData model, string filePath)
+        {
+            try
+            {
+                XmlSerializer formatter = new XmlSerializer(typeof(ETWData));
+                using (FileStream fs = new FileStream(GetSerializedModelFilePath(filePath), FileMode.Create))
+                {
+                    formatter.Serialize(fs, model);
+                }
+            }
+            catch (SerializationException ex)
+            {
+                Console.WriteLine("Failed to serialize. Reason: " + ex.Message);
+                throw;
+            }
+        }
+
+        public static ETWData DeserializeDataModel(string filePath)
+        {
+            ETWData model = null;
+
+            try
+            {
+                XmlSerializer formatter = new XmlSerializer(typeof(ETWData));
+                using (FileStream fs = new FileStream(GetSerializedModelFilePath(filePath), FileMode.Open))
+                {
+                    model = (ETWData)formatter.Deserialize(fs);
+                }
+            }
+            catch(SerializationException ex)
+            {
+                Console.WriteLine("Failed to deserialize. Reason: " + ex.Message);
+                throw;
+            }
+
+            return model;
+        }
+
+        public static string GetSerializedModelFilePath(string filePath)
+        {
+            return $"{filePath}"+".xml";
         }
     }
 }

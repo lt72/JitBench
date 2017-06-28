@@ -1,25 +1,26 @@
 ﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using System;
 using System.Collections.Generic;
 
 namespace Microsoft.ETWLogAnalyzer.Abstractions
 {
-    public abstract class EventModelBase
+    public interface IEventModel
     {
-        public int PidUnderTest { get => ProcessStart.ProcessID; }
+        int TestTarget { get; }
 
-        public double TimeBase { get => ProcessStart.TimeStampRelativeMSec;  }
+        double TimeBase { get; }
 
-        public ProcessTraceData ProcessStart { get; protected set; }
+        ProcessTraceData ProcessStart { get; }
 
-        public ProcessTraceData ProcessStop { get; protected set; }
+        ProcessTraceData ProcessStop { get; }
 
-        public abstract List<MethodUniqueIdentifier> GetJittedMethodsList { get; }
+        List<MethodUniqueIdentifier> GetJittedMethodsList { get; }
 
-        public abstract List<int> GetThreadList { get; }
+        List<int> GetThreadList { get; }
 
-        public abstract IEnumerator<TraceEvent> GetThreadTimeline(int threadId);
+        IEnumerator<TraceEvent> GetThreadTimeline(int threadId);
 
-        public abstract bool GetJittingThreadForMethod(MethodUniqueIdentifier methodUniqueIdentifier, out int threadId);
+        bool GetJittingThreadForMethod(MethodUniqueIdentifier methodUniqueIdentifier, out int threadId);
     }
 }

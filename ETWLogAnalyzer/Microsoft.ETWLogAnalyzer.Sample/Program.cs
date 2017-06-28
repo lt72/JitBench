@@ -58,7 +58,17 @@ namespace Microsoft.ETWLogAnalyzer
 
             Console.WriteLine("...analyzing data...");
 
-            ETWData data = GenerateModel(targetStart, targetEnd);
+            ETWData data = null;
+            if (ShouldTryDeserialize(CmdLine.Arguments[CmdLine.EtwLogSwitch].Value))
+            {
+                data = Controller.DeserializeDataModel(CmdLine.Arguments[CmdLine.EtwLogSwitch].Value);
+            }
+
+            if(data == null)
+            {
+                data = GenerateModel(targetStart, targetEnd);
+            }
+
             
             // Generate some reports
 
@@ -69,6 +79,24 @@ namespace Microsoft.ETWLogAnalyzer
             Console.WriteLine("...done!");
 
             return 0;
+        }
+
+        private static bool ShouldTryDeserialize(string filePath)
+        {
+            return false;
+
+            //////string serializedPath = Controller.GetSerializedModelFilePath(filePath);
+
+            //////if (File.Exists(serializedPath) == false)
+            //////{
+            //////    return false;
+            //////}
+            //////else if (File.GetLastAccessTime(serializedPath) > File.GetLastAccessTime(filePath))
+            //////{
+            //////    return true;
+            //////}
+
+            //////return false;
         }
 
         private static void GenerateReports(string reportsPath, string outputPath, ETWData etwData)
@@ -186,7 +214,11 @@ namespace Microsoft.ETWLogAnalyzer
                 source.Process();
             }
 
-            return new ETWData(putStart, putEnd, events);
+            var model = new ETWData(putStart, putEnd, events);
+
+            Controller.SerializeDataModel( model, CmdLine.Arguments[CmdLine.EtwLogSwitch].Value);
+
+            return model;
         }
 
         // Helpers

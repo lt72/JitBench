@@ -35,7 +35,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
 
         public string Name => "quantum_usage_stats.txt";
 
-        public IReport Analyze(EventModelBase data)
+        public IReport Analyze(IEventModel data)
         {
             foreach (int threadId in data.GetThreadList)
             {

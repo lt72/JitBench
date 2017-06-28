@@ -5,12 +5,16 @@ using Microsoft.ETWLogAnalyzer.Abstractions;
 
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
-
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 
 namespace Microsoft.ETWLogAnalyzer.Framework
 {
-    public class ETWData : EventModelBase
+    public sealed class ETWData  : IEventModel
     {
+        private ProcessTraceData _processStart;
+        
+        private ProcessTraceData _processStop;
+
         private readonly Dictionary<int, SortedList<double, TRACING.TraceEvent>> _threadSchedule;
 
         private readonly SortedList<double, TRACING.TraceEvent> _overallEvents;
@@ -24,8 +28,8 @@ namespace Microsoft.ETWLogAnalyzer.Framework
         /// <param name="events"> ETWEventsHolder with the handled events </param>
         public ETWData(PARSERS.Kernel.ProcessTraceData procStart, PARSERS.Kernel.ProcessTraceData procStop, Helpers.ETWEventsHolder events)
         {
-            ProcessStart = procStart;
-            ProcessStop = procStop;
+            _processStart = procStart;
+            _processStop = procStop;
             _threadSchedule = events.ThreadSchedule;
             _overallEvents = events.EventSchedule;
             _methodToThreadMap = GetMethodToThreadCache();
@@ -39,13 +43,22 @@ namespace Microsoft.ETWLogAnalyzer.Framework
                 .ToDictionary(x => new MethodUniqueIdentifier(x), x => x.ThreadID);
         }
 
+
+        public int TestTarget { get => _processStart.ProcessID; }
+
+        public double TimeBase { get => _processStart.TimeStampRelativeMSec; }
+
+        public ProcessTraceData ProcessStart { get => _processStart; }
+
+        public ProcessTraceData ProcessStop { get => _processStop; }
+
         /// <summary>
         /// Returns true if the process jitted a method with the given (ID, name) tuple, false otherwise
         /// </summary>
         /// <param name="methodUniqueIdentifier"> (identifier, fully quallified name) pair for method </param>
         /// <param name="threadId"> int identifier of the jitting thread </param>
         /// <returns> true if method jitted by process </returns>
-        public override bool GetJittingThreadForMethod(MethodUniqueIdentifier methodUniqueIdentifier, out int threadId)
+        public bool GetJittingThreadForMethod(MethodUniqueIdentifier methodUniqueIdentifier, out int threadId)
         {
             return _methodToThreadMap.TryGetValue(methodUniqueIdentifier, out threadId);
         }
@@ -54,19 +67,19 @@ namespace Microsoft.ETWLogAnalyzer.Framework
         /// Retrieve a list of methods jitted by the process.
         /// </summary>
         /// <returns> list of(identifier, fully quallified name) pair for methods jitted</returns>
-        public override List<MethodUniqueIdentifier> GetJittedMethodsList => _methodToThreadMap.Keys.ToList();
+        public List<MethodUniqueIdentifier> GetJittedMethodsList => _methodToThreadMap.Keys.ToList();
 
         /// <summary>
         /// Retrieve a list of threads used by the process.
         /// </summary>
         /// <returns> list of threads used by the process </returns>
-        public override List<int> GetThreadList => _threadSchedule.Keys.ToList();
+        public List<int> GetThreadList => _threadSchedule.Keys.ToList();
 
-        public override IEnumerator<TRACING.TraceEvent> GetThreadTimeline(int threadId)
+        public IEnumerator<TRACING.TraceEvent> GetThreadTimeline(int threadId)
         {
             if (!_threadSchedule.TryGetValue(threadId, out var threadTimeline))
             {
-                throw new ArgumentException($"Process {PidUnderTest} didn't use thread {threadId}.");
+                throw new ArgumentException($"Process {TestTarget} didn't use thread {threadId}.");
             }
 
             return threadTimeline.Values.GetEnumerator();
