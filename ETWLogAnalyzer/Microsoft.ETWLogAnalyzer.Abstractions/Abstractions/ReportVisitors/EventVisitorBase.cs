@@ -9,6 +9,7 @@ namespace Microsoft.ETWLogAnalyzer.Abstractions
         public enum VisitorState { Continue, Done, Error };
 
         private readonly List<Type> _relevantTypes;
+
         public VisitorState State { get; protected set; }
 
         public EventVisitor()

@@ -22,6 +22,12 @@ namespace Microsoft.ETWLogAnalyzer.Framework
         private readonly Dictionary<MethodUniqueIdentifier, int> _methodToThreadMap;
 
         /// <summary>
+        /// For serialization purposes only...
+        /// </summary>
+        private ETWData()
+        { }
+
+        /// <summary>
         /// Data holder for performance metrics querying
         /// </summary>
         /// <param name="data"> ProcessTraceData for the event under examination </param>

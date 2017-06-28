@@ -16,6 +16,9 @@ namespace Microsoft.ETWLogAnalyzer.Abstractions
         public int MethodToken { get => _methodToken; }
 
         public long ModuleId { get => _moduleId; }
+        
+
+        private MethodUniqueIdentifier() { }
 
         public MethodUniqueIdentifier(PARSERS.Clr.MethodJittingStartedTraceData jitEv)
         {

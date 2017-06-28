@@ -38,7 +38,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
 
         public string Name => "lifetime_stats.txt";
 
-        public IReport Analyze(EventModelBase data)
+        public IReport Analyze(IEventModel data)
         {
             _processStartTime = data.ProcessStart.TimeStampRelativeMSec;
             _processEndTime = data.ProcessStop.TimeStampRelativeMSec;
