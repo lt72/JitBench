@@ -29,7 +29,7 @@ namespace Microsoft.ETWLogAnalyzer.Framework
             {
                 System.Console.WriteLine($"Writing report {report.Name} to {baseFolder}...");
 
-                report.Analyze(etwData).Persist( new ReportWriters.PlainTextWriter(System.IO.Path.Combine(baseFolder, report.Name)), true);
+                report.Analyze(etwData).Persist(baseFolder);
             }
         }
         
@@ -39,17 +39,21 @@ namespace Microsoft.ETWLogAnalyzer.Framework
 
             var reportsPathName = Path.GetDirectoryName(reportsPath);
 
-            foreach (var file in Directory.EnumerateFiles(reportsPathName))
+            foreach (var dllFile in Directory.EnumerateFiles(reportsPathName, "*.dll"))
             {
+                var pdbFile = Path.ChangeExtension(dllFile, ".pdb");
+
                 Assembly assembly = null;
 
                 try
                 {
-                    assembly = AppDomain.CurrentDomain.Load(File.ReadAllBytes(file));
+                    if (File.Exists(pdbFile))
+                        assembly = AppDomain.CurrentDomain.Load(File.ReadAllBytes(dllFile), File.ReadAllBytes(pdbFile));
+                    else
+                        assembly = AppDomain.CurrentDomain.Load(File.ReadAllBytes(dllFile));
                 }
                 catch (BadImageFormatException)
                 {
-                    continue;
                 }
 
                 foreach (var t in assembly.ExportedTypes)

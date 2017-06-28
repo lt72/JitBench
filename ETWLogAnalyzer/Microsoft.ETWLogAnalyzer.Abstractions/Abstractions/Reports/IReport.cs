@@ -6,6 +6,6 @@
         
         IReport Analyze(EventModelBase data);
 
-       void Persist(ReportWriters.TextReportWriter writer, bool dispose);
+       void Persist(string folderPath);
     }
 }

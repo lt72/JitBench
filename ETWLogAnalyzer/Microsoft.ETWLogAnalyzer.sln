@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26510.0
+VisualStudioVersion = 15.0.26430.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.ETWLogAnalyzer.Abstractions", "Microsoft.ETWLogAnalyzer.Abstractions\Microsoft.ETWLogAnalyzer.Abstractions.csproj", "{E94F756C-7F83-49B2-9F6A-B99AB3150066}"
 EndProject
@@ -10,6 +10,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.ETWLogAnalyzer.Reports", "Microsoft.ETWLogAnalyzer.Reports\Microsoft.ETWLogAnalyzer.Reports.csproj", "{400F518B-DDC0-408A-A008-16895E20FE27}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.ETWLogAnalyzer.Sample", "Microsoft.ETWLogAnalyzer.Sample\Microsoft.ETWLogAnalyzer.Sample.csproj", "{299A0436-79F4-4D23-B5F9-ADC0D3CC4D85}"
+	ProjectSection(ProjectDependencies) = postProject
+		{400F518B-DDC0-408A-A008-16895E20FE27} = {400F518B-DDC0-408A-A008-16895E20FE27}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

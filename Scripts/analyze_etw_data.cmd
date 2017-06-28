@@ -16,6 +16,7 @@ cd "%ETWAPPDIR%"
 echo %CD%
 
 "%NUGET%" restore
+devenv Microsoft.ETWLogAnalyzer.sln /Clean %CONFIGURATION%
 devenv Microsoft.ETWLogAnalyzer.sln /Build %CONFIGURATION%
 
 cd "%APP%"
