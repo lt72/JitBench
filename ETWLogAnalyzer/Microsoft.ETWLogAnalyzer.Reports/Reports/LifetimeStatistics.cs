@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.ETWLogAnalyzer.Abstractions;
 using Microsoft.ETWLogAnalyzer.ReportVisitors;
 using Microsoft.ETWLogAnalyzer.ReportWriters;
@@ -27,8 +26,6 @@ namespace Microsoft.ETWLogAnalyzer.Reports
 
         private static readonly string FormatString = "{0, -35}:\t{1,9}";
         private double _processStartTime;
-        private double _processFirstReq;
-        private double _processProgramStarted;
         private double _processEndTime;
         private string _processName;
         private int _pid;

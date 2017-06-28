@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.ETWLogAnalyzer.Abstractions;
 using Microsoft.ETWLogAnalyzer.ReportVisitors;
 using Microsoft.ETWLogAnalyzer.ReportWriters;
 using Microsoft.ETWLogAnalyzer.Framework;
-using System.Diagnostics;
+
+using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 
 namespace Microsoft.ETWLogAnalyzer.Reports
 {
@@ -26,10 +28,12 @@ namespace Microsoft.ETWLogAnalyzer.Reports
         private static readonly string FormatString = "{0, -35}:\t{1,9}";
 
         private Dictionary<int, Dictionary<MethodUniqueIdentifier, JitTimeInfo>> _methodJitStatsPerThread;
+        private Dictionary<int, MethodUniqueIdentifier> _firstMethodJitted;
 
         public JitStatistics()
         {
             _methodJitStatsPerThread = new Dictionary<int, Dictionary<MethodUniqueIdentifier, JitTimeInfo>>();
+            _firstMethodJitted = new Dictionary<int, MethodUniqueIdentifier>();
         }
 
         public string Name => "jit_time_stats.txt";
@@ -40,15 +44,19 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             {
                 var jitTimeVisitor = new JitTimeAccumulatorVisitor(threadId);
                 var perceivedJitTimeVisitor = new PerceivedJitTimeVisitor(threadId);
-
+                var jitMethodVisitor = new GetFirstMatchingEventVisitor<PARSERS.Clr.MethodLoadUnloadVerboseTraceData>();
                 Controller.RunVisitorForResult(jitTimeVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(perceivedJitTimeVisitor, data.GetThreadTimeline(threadId));
+                Controller.RunVisitorForResult(jitMethodVisitor, data.GetThreadTimeline(threadId));
 
                 Debug.Assert(jitTimeVisitor.State != EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error
                     && perceivedJitTimeVisitor.State != EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error);
 
                 _methodJitStatsPerThread.Add(threadId,
                     ZipResults(jitTimeVisitor.Result, perceivedJitTimeVisitor.Result));
+
+                var methodUniqueId = (jitMethodVisitor.Result == null) ? null : new MethodUniqueIdentifier(jitMethodVisitor.Result);
+                _firstMethodJitted.Add(threadId, methodUniqueId);
             }
             return this;
         }
@@ -66,7 +74,12 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                     threadJitTimes.JitTimeUsed / threadJitTimes.PerceivedJitTime * 100;
 
                 writer.WriteHeader("Thread " + threadInfo.Key);
+                
                 writer.AddIndentationLevel();
+                if (_firstMethodJitted.TryGetValue(threadInfo.Key, out var methodUniqueId) && methodUniqueId != null)
+                {
+                    writer.WriteLine($"First jitted method {methodUniqueId.FullyQualifiedName}.");
+                }
                 writer.WriteLine(String.Format(FormatString, "Effective jitting time [ms]", threadJitTimes.JitTimeUsed));
                 writer.WriteLine(String.Format(FormatString, "Perceived jitting time [ms]", threadJitTimes.PerceivedJitTime));
                 writer.WriteLine(String.Format(FormatString, "Jit time usage efficiency [%]", efficiency));
