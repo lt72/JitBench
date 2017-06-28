@@ -78,6 +78,13 @@ namespace Microsoft.ETWLogAnalyzer
 
             Console.WriteLine("...done!");
 
+            if (CmdLine.Arguments[CmdLine.WaitSwitch].Value == "true")
+            {
+                Console.WriteLine("");
+                Console.WriteLine("Press any key to terminate.");
+                Console.ReadLine();
+            }
+
             return 0;
         }
 

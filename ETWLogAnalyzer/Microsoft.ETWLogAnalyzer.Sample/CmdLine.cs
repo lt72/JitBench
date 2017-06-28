@@ -97,6 +97,11 @@ namespace Microsoft.ETWLogAnalyzer
         internal static readonly string OutputPathExample = "Path (absolute, relative, or environment variable) to store reports to.";
         internal static readonly string OutputPathDescription = "path to store the log files in";
         internal static readonly string OutputPathDefault = "%TEMP%";
+        //--//
+        internal static readonly string WaitSwitch = "/wait";
+        internal static readonly string WaitExample = "/wait";
+        internal static readonly string WaitDescription = "if true program waits for a key press before exiting.";    
+        internal static readonly string WaitDefault = "true";
 
         static CmdLine()
         {
@@ -105,6 +110,7 @@ namespace Microsoft.ETWLogAnalyzer
             Arguments.Add(TargetProcessSwitch, Argument.New(TargetProcessSwitch, TargetExample, TargetDescription, TargetDefault, TargetDefault));
             Arguments.Add(ReportPathSwitch, Argument.New(ReportPathSwitch, ReportPathExample, ReportPathDescription, ReportPathDefault, ReportPathDefault));
             Arguments.Add(OutputPathSwitch, Argument.New(OutputPathSwitch, OutputPathExample, OutputPathDescription, OutputPathDefault, OutputPathDefault));
+            Arguments.Add(WaitSwitch, Argument.New(WaitSwitch, WaitExample, WaitDescription, WaitDefault, WaitDefault));
         }
 
         internal static Cmd Process(string[] args)
