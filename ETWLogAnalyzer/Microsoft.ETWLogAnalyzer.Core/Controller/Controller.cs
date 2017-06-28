@@ -29,7 +29,7 @@ namespace Microsoft.ETWLogAnalyzer.Framework
             {
                 System.Console.WriteLine($"Writing report {report.Name} to {baseFolder}...");
 
-                report.Analyze(etwData).Persist( new ReportWriters.PlainTextWriter(System.IO.Path.Combine(baseFolder, report.Name)), true);
+                report.Analyze(etwData).Persist(baseFolder);
             }
         }
         

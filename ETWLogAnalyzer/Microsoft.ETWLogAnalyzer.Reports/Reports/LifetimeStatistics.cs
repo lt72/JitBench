@@ -73,36 +73,34 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             return this;
         }
 
-        public void Persist(TextReportWriter writer, bool dispose)
+        public void Persist(string folderPath)
         {
-            writer.WriteTitle("Process data");
-
-            writer.WriteLine(String.Format(FormatString, "Process name [-]", _processName));
-            writer.WriteLine(String.Format(FormatString, "Process ID [-]", _pid));
-            writer.WriteLine(String.Format(FormatString, "Process start time [ms]", _processStartTime));
-            writer.WriteLine(String.Format(FormatString, "Process stop time [ms]", _processEndTime));
-            writer.WriteLine(String.Format(FormatString, "Process duration [ms]", _processEndTime - _processStartTime));
-            
-            writer.SkipLine();
-            writer.SkipLine();
-            writer.WriteTitle("Thread lifetime information");
-
-            writer.Write($"\nThe process used {_threadInfoTable.Count} thread(s) as follows:");
-
-            foreach (var threadInfo in _threadInfoTable)
+            using (var writer = new ReportWriters.PlainTextWriter(System.IO.Path.Combine(folderPath, Name)))
             {
-                writer.WriteHeader("Thread " + threadInfo.Key);
-                writer.AddIndentationLevel();
-                var threadLifeInfo = threadInfo.Value;
-                writer.WriteLine(String.Format(FormatString, "Start time [ms]", threadLifeInfo.Start));
-                writer.WriteLine(String.Format(FormatString, "Stop time [ms]", threadLifeInfo.Stop));
-                writer.WriteLine(String.Format(FormatString, "First method Jitted [-]", threadLifeInfo.FirstMethodJitted));
-                writer.RemoveIndentationLevel();
-            }
+                writer.WriteTitle("Process data");
 
-            if (dispose)
-            {
-                writer.Dispose();
+                writer.WriteLine(String.Format(FormatString, "Process name [-]", _processName));
+                writer.WriteLine(String.Format(FormatString, "Process ID [-]", _pid));
+                writer.WriteLine(String.Format(FormatString, "Process start time [ms]", _processStartTime));
+                writer.WriteLine(String.Format(FormatString, "Process stop time [ms]", _processEndTime));
+                writer.WriteLine(String.Format(FormatString, "Process duration [ms]", _processEndTime - _processStartTime));
+
+                writer.SkipLine();
+                writer.SkipLine();
+                writer.WriteTitle("Thread lifetime information");
+
+                writer.Write($"\nThe process used {_threadInfoTable.Count} thread(s) as follows:");
+
+                foreach (var threadInfo in _threadInfoTable)
+                {
+                    writer.WriteHeader("Thread " + threadInfo.Key);
+                    writer.AddIndentationLevel();
+                    var threadLifeInfo = threadInfo.Value;
+                    writer.WriteLine(String.Format(FormatString, "Start time [ms]", threadLifeInfo.Start));
+                    writer.WriteLine(String.Format(FormatString, "Stop time [ms]", threadLifeInfo.Stop));
+                    writer.WriteLine(String.Format(FormatString, "First method Jitted [-]", threadLifeInfo.FirstMethodJitted));
+                    writer.RemoveIndentationLevel();
+                }
             }
         }
     }

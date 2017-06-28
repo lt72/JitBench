@@ -61,57 +61,55 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             return this;
         }
 
-        public void Persist(TextReportWriter writer, bool dispose)
+        public void Persist(string folderPath)
         {
-            writer.WriteTitle("Jit time statistics per thread");
-            writer.Write($"\nThe process used {_methodJitStatsPerThread.Count} thread(s) as follows:");
-
-            foreach (var threadInfo in _methodJitStatsPerThread)
+            using (var writer = new PlainTextWriter(System.IO.Path.Combine(folderPath, Name)))
             {
-                JitTimeInfo threadJitTimes = AccumulateMethodTimes(threadInfo.Value);
-                var efficiency = (threadJitTimes.PerceivedJitTime == 0) ?
-                    100 :
-                    threadJitTimes.JitTimeUsed / threadJitTimes.PerceivedJitTime * 100;
+                writer.WriteTitle("Jit time statistics per thread");
+                writer.Write($"\nThe process used {_methodJitStatsPerThread.Count} thread(s) as follows:");
 
-                writer.WriteHeader("Thread " + threadInfo.Key);
-                
-                writer.AddIndentationLevel();
-                if (_firstMethodJitted.TryGetValue(threadInfo.Key, out var methodUniqueId) && methodUniqueId != null)
+                foreach (var threadInfo in _methodJitStatsPerThread)
                 {
-                    writer.WriteLine($"First jitted method {methodUniqueId.FullyQualifiedName}.");
-                }
-                writer.WriteLine(String.Format(FormatString, "Effective jitting time [ms]", threadJitTimes.JitTimeUsed));
-                writer.WriteLine(String.Format(FormatString, "Perceived jitting time [ms]", threadJitTimes.PerceivedJitTime));
-                writer.WriteLine(String.Format(FormatString, "Jit time usage efficiency [%]", efficiency));
-                writer.RemoveIndentationLevel();
-            }
+                    JitTimeInfo threadJitTimes = AccumulateMethodTimes(threadInfo.Value);
+                    var efficiency = (threadJitTimes.PerceivedJitTime == 0) ?
+                        100 :
+                        threadJitTimes.JitTimeUsed / threadJitTimes.PerceivedJitTime * 100;
 
-            writer.SkipLine();
-            writer.SkipLine();
-
-            writer.WriteTitle("Jitting statistics per method");
-
-            foreach (var methodsInThread in _methodJitStatsPerThread.Values)
-            {
-                foreach (var methodIdJitTimePair in methodsInThread)
-                {
-                    writer.WriteHeader("Method " + methodIdJitTimePair.Key);
+                    writer.WriteHeader("Thread " + threadInfo.Key);
 
                     writer.AddIndentationLevel();
-
-                    double jitTime = methodIdJitTimePair.Value.JitTimeUsed;
-                    double perceivedTime = methodIdJitTimePair.Value.PerceivedJitTime;
-                    writer.WriteLine(String.Format(FormatString, "Effective jitting time [ms]", jitTime));
-                    writer.WriteLine(String.Format(FormatString, "Perceived jitting time [ms]", perceivedTime));
-                    writer.WriteLine(String.Format(FormatString, "Jit time usage efficiency [%]", 100.0 * jitTime / perceivedTime));
-
+                    if (_firstMethodJitted.TryGetValue(threadInfo.Key, out var methodUniqueId) && methodUniqueId != null)
+                    {
+                        writer.WriteLine($"First jitted method {methodUniqueId.FullyQualifiedName}.");
+                    }
+                    writer.WriteLine(String.Format(FormatString, "Effective jitting time [ms]", threadJitTimes.JitTimeUsed));
+                    writer.WriteLine(String.Format(FormatString, "Perceived jitting time [ms]", threadJitTimes.PerceivedJitTime));
+                    writer.WriteLine(String.Format(FormatString, "Jit time usage efficiency [%]", efficiency));
                     writer.RemoveIndentationLevel();
                 }
-            }
 
-            if (dispose)
-            {
-                writer.Dispose();
+                writer.SkipLine();
+                writer.SkipLine();
+
+                writer.WriteTitle("Jitting statistics per method");
+
+                foreach (var methodsInThread in _methodJitStatsPerThread.Values)
+                {
+                    foreach (var methodIdJitTimePair in methodsInThread)
+                    {
+                        writer.WriteHeader("Method " + methodIdJitTimePair.Key);
+
+                        writer.AddIndentationLevel();
+
+                        double jitTime = methodIdJitTimePair.Value.JitTimeUsed;
+                        double perceivedTime = methodIdJitTimePair.Value.PerceivedJitTime;
+                        writer.WriteLine(String.Format(FormatString, "Effective jitting time [ms]", jitTime));
+                        writer.WriteLine(String.Format(FormatString, "Perceived jitting time [ms]", perceivedTime));
+                        writer.WriteLine(String.Format(FormatString, "Jit time usage efficiency [%]", 100.0 * jitTime / perceivedTime));
+
+                        writer.RemoveIndentationLevel();
+                    }
+                }
             }
         }
 
