@@ -11,6 +11,20 @@ namespace Microsoft.ETWLogAnalyzer.Reports
 {
     public class LifetimeStatistics : IReport
     {
+        private struct ThreadLifeInfo
+        {
+            public MethodUniqueIdentifier FirstMethodJitted { get; private set; }
+            public double Stop { get; private set; }
+            public double Start { get; private set; }
+
+            public ThreadLifeInfo(double startTime, double stopTime, MethodUniqueIdentifier firstMethodJitted)
+            {
+                Start = startTime;
+                Stop = stopTime;
+                FirstMethodJitted = firstMethodJitted;
+            }
+        }
+
         private static readonly string FormatString = "{0, -35}:\t{1,9}";
         private double _processStartTime;
         private double _processFirstReq;
@@ -18,9 +32,11 @@ namespace Microsoft.ETWLogAnalyzer.Reports
         private double _processEndTime;
         private string _processName;
         private int _pid;
+        private Dictionary<int, ThreadLifeInfo> _threadInfoTable;
 
         public LifetimeStatistics()
         {
+            _threadInfoTable = new Dictionary<int, ThreadLifeInfo>();
         }
 
         public string Name => "lifetime_stats.txt";
@@ -34,12 +50,29 @@ namespace Microsoft.ETWLogAnalyzer.Reports
 
             foreach (int threadId in data.GetThreadList)
             {
-                var startVisitor = new GetFirstMatchingEventVisitor((x) => (x is PARSERS.Kernel.ProcessTraceData && (x as PARSERS.Kernel.ProcessTraceData).));
+                var startVisitor = new GetFirstMatchingEventVisitor<PARSERS.Kernel.ThreadTraceData>(
+                        x => x.Opcode == Diagnostics.Tracing.TraceEventOpcode.Start);
+
+                var stopVisitor = new GetFirstMatchingEventVisitor<PARSERS.Kernel.ThreadTraceData>(
+                        x => x.Opcode == Diagnostics.Tracing.TraceEventOpcode.Stop);
+
+                var jitVisitor = new GetFirstMatchingEventVisitor<PARSERS.Clr.MethodLoadUnloadVerboseTraceData>();
+
                 Controller.RunVisitorForResult(startVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(stopVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(jitVisitor, data.GetThreadTimeline(threadId));
-            }
 
+                System.Diagnostics.Debug.Assert(startVisitor.State == EventVisitor<PARSERS.Kernel.ThreadTraceData>.VisitorState.Done &&
+                    stopVisitor.State == EventVisitor<PARSERS.Kernel.ThreadTraceData>.VisitorState.Done);
+
+                var methodUniqueId = (jitVisitor.Result == null) ? null : new MethodUniqueIdentifier(jitVisitor.Result);
+
+                var threadLifeInfo = new ThreadLifeInfo(
+                    startVisitor.Result.TimeStampRelativeMSec, stopVisitor.Result.TimeStampRelativeMSec,
+                    methodUniqueId);
+
+                _threadInfoTable.Add(threadId, threadLifeInfo);
+            }
             return this;
         }
 
@@ -52,51 +85,28 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             writer.WriteLine(String.Format(FormatString, "Process start time [ms]", _processStartTime));
             writer.WriteLine(String.Format(FormatString, "Process stop time [ms]", _processEndTime));
             writer.WriteLine(String.Format(FormatString, "Process duration [ms]", _processEndTime - _processStartTime));
-
-
+            
+            writer.SkipLine();
+            writer.SkipLine();
             writer.WriteTitle("Thread lifetime information");
 
-            writer.Write($"\nThe process used {_methodJitStatsPerThread.Count} thread(s) as follows:");
+            writer.Write($"\nThe process used {_threadInfoTable.Count} thread(s) as follows:");
 
-            foreach (var threadInfo in _methodJitStatsPerThread)
+            foreach (var threadInfo in _threadInfoTable)
             {
                 writer.WriteHeader("Thread " + threadInfo.Key);
                 writer.AddIndentationLevel();
-                writer.WriteLine(String.Format(FormatString, "Start time [ms]", ));
-                writer.WriteLine(String.Format(FormatString, "Stop time [ms]", ));
-                writer.WriteLine(String.Format(FormatString, "First method Jitted [-]", ));
+                var threadLifeInfo = threadInfo.Value;
+                writer.WriteLine(String.Format(FormatString, "Start time [ms]", threadLifeInfo.Start));
+                writer.WriteLine(String.Format(FormatString, "Stop time [ms]", threadLifeInfo.Stop));
+                writer.WriteLine(String.Format(FormatString, "First method Jitted [-]", threadLifeInfo.FirstMethodJitted));
                 writer.RemoveIndentationLevel();
             }
-
-            writer.SkipLine();
-            writer.SkipLine();
 
             if (dispose)
             {
                 writer.Dispose();
             }
-        }
-
-        // Helpers
-
-        private JitTimeInfo AccumulateMethodTimes(Dictionary<MethodUniqueIdentifier, JitTimeInfo> threadMethodJitTimes)
-        {
-            double threadJitTime = threadMethodJitTimes.Values.Aggregate(0.0, (accumulator, value) => accumulator + value.JitTimeUsed);
-            double threadPerceivdJitTime = threadMethodJitTimes.Values.Aggregate(0.0, (accumulator, value) => accumulator + value.PerceivedJitTime);
-            return new JitTimeInfo(threadJitTime, threadPerceivdJitTime);
-        }
-
-        private Dictionary<MethodUniqueIdentifier, JitTimeInfo> ZipResults(
-            Dictionary<MethodUniqueIdentifier, double> jitTimeUsedPerMethod,
-            Dictionary<MethodUniqueIdentifier, double> perceivedJitTimesPerMethod)
-        {
-            return (from methodUniqueId in jitTimeUsedPerMethod.Keys
-                    let effectiveTime = jitTimeUsedPerMethod[methodUniqueId]
-                    let perceivedTime = perceivedJitTimesPerMethod[methodUniqueId]
-                    select new KeyValuePair<MethodUniqueIdentifier, JitTimeInfo>(
-                        methodUniqueId,
-                        new JitTimeInfo(effectiveTime, perceivedTime)))
-                    .ToDictionary(x => x.Key, x => x.Value);
         }
     }
 }

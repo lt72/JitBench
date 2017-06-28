@@ -6,21 +6,24 @@ using Microsoft.ETWLogAnalyzer.Abstractions;
 
 namespace Microsoft.ETWLogAnalyzer.ReportVisitors
 {
-    public class GetFirstMatchingEventVisitor : EventVisitor<TRACING.TraceEvent>
+    public class GetFirstMatchingEventVisitor<T> : EventVisitor<T> where T : TRACING.TraceEvent 
     {
-        private Predicate<TRACING.TraceEvent> _matchPredicate;
-        public GetFirstMatchingEventVisitor(Predicate<TRACING.TraceEvent> condition) : base()
+        private static Predicate<T> DefaultTrue = x => true;
+        private readonly Predicate<T> _matchingCondition;
+
+        public GetFirstMatchingEventVisitor(Predicate<T> condition = null) : base()
         {
+            _matchingCondition = condition ?? DefaultTrue;
             Result = null;
-            AddRelevantTypes(new List<Type> { typeof(TRACING.TraceEvent) });
+            AddRelevantTypes(new List<Type> { typeof(T) });
         }
 
         public override void Visit(TRACING.TraceEvent ev)
         {
-            if (_matchPredicate(ev))
+            if (_matchingCondition((T)ev))
             {
-                Result = ev;
                 State = VisitorState.Done;
+                Result = ev as T;
             }
         }
     }
