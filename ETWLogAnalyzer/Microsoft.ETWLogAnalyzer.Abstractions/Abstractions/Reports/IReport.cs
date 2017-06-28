@@ -4,7 +4,7 @@
     {
         string Name { get; }
         
-        IReport Analyze(EventModelBase data);
+        IReport Analyze(IEventModel data);
 
        void Persist(string folderPath);
     }
