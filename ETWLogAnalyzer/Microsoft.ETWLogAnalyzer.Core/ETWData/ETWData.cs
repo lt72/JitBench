@@ -88,13 +88,13 @@ namespace Microsoft.ETWLogAnalyzer.Framework
         /// Retrieve a list of methods jitted by the process.
         /// </summary>
         /// <returns> list of(identifier, fully quallified name) pair for methods jitted</returns>
-        public List<MethodUniqueIdentifier> GetJittedMethodsList => _methodToThreadMap.Keys.ToList();
+        public List<MethodUniqueIdentifier> JittedMethodsList => _methodToThreadMap.Keys.ToList();
 
         /// <summary>
         /// Retrieve a list of threads used by the process.
         /// </summary>
         /// <returns> list of threads used by the process </returns>
-        public List<int> GetThreadList => _threadSchedule.Keys.ToList();
+        public List<int> ThreadList => _threadSchedule.Keys.ToList();
 
         public IEnumerator<TRACING.TraceEvent> GetThreadTimeline(int threadId)
         {

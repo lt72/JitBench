@@ -15,9 +15,9 @@ namespace Microsoft.ETWLogAnalyzer.Abstractions
 
         ProcessTraceData ProcessStop { get; }
 
-        List<MethodUniqueIdentifier> GetJittedMethodsList { get; }
+        List<MethodUniqueIdentifier> JittedMethodsList { get; }
 
-        List<int> GetThreadList { get; }
+        List<int> ThreadList { get; }
 
         IEnumerator<TraceEvent> GetThreadTimeline(int threadId);
 

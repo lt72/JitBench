@@ -11,7 +11,7 @@ using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 
 namespace Microsoft.ETWLogAnalyzer.Reports
 {
-    public class JitStatistics : IReport
+    public class JitTimeStatistics : IReport
     {
         private class JitTimeInfo
         {
@@ -29,34 +29,64 @@ namespace Microsoft.ETWLogAnalyzer.Reports
 
         private Dictionary<int, Dictionary<MethodUniqueIdentifier, JitTimeInfo>> _methodJitStatsPerThread;
         private Dictionary<int, MethodUniqueIdentifier> _firstMethodJitted;
+        private Dictionary<int, long> _contextSwitchesPerThread;
+        private Dictionary<int, long> _hardFaultsPerThread;
+        private Dictionary<MethodUniqueIdentifier, long> _contextSwitchesPerMethod;
+        private Dictionary<MethodUniqueIdentifier, long> _hardFaultsPerMethod;
 
-        public JitStatistics()
+        public JitTimeStatistics()
         {
             _methodJitStatsPerThread = new Dictionary<int, Dictionary<MethodUniqueIdentifier, JitTimeInfo>>();
             _firstMethodJitted = new Dictionary<int, MethodUniqueIdentifier>();
+
+            _contextSwitchesPerThread = new Dictionary<int, long>( );
+            _hardFaultsPerThread = new Dictionary<int, long>( );
+            _contextSwitchesPerMethod = new Dictionary<MethodUniqueIdentifier, long>( );
+            _hardFaultsPerMethod = new Dictionary<MethodUniqueIdentifier, long>( );
         }
 
         public string Name => "jit_time_stats.txt";
 
         public IReport Analyze(IEventModel data)
         {
-            foreach (int threadId in data.GetThreadList)
+            foreach (int threadId in data.ThreadList)
             {
                 var jitTimeVisitor = new JitTimeAccumulatorVisitor(threadId);
                 var perceivedJitTimeVisitor = new PerceivedJitTimeVisitor(threadId);
                 var jitMethodVisitor = new GetFirstMatchingEventVisitor<PARSERS.Clr.MethodLoadUnloadVerboseTraceData>();
+                var contextSwitchesPerThreadVisitor = new GetCountEventsBetweenStartStopEventsPairVisitor<PARSERS.Kernel.ThreadTraceData, PARSERS.Kernel.ThreadTraceData, PARSERS.Kernel.CSwitchTraceData>(true);
+                var hardFaultsPerThreadVisitor = new GetCountEventsBetweenStartStopEventsPairVisitor<PARSERS.Kernel.ThreadTraceData, PARSERS.Kernel.ThreadTraceData, PARSERS.Kernel.MemoryHardFaultTraceData>(true);
+                var contextSwitchesPerMethodVisitor = new GetCountEventsBetweenAllStartStopEventsPairVisitor<PARSERS.Clr.MethodJittingStartedTraceData, PARSERS.Clr.MethodLoadUnloadVerboseTraceData, PARSERS.Kernel.CSwitchTraceData, MethodUniqueIdentifier>( false );
+                var hardFaultsPerMethodVisitor = new GetCountEventsBetweenAllStartStopEventsPairVisitor<PARSERS.Clr.MethodJittingStartedTraceData, PARSERS.Clr.MethodLoadUnloadVerboseTraceData, PARSERS.Kernel.MemoryHardFaultTraceData, MethodUniqueIdentifier>( false );
+
                 Controller.RunVisitorForResult(jitTimeVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(perceivedJitTimeVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(jitMethodVisitor, data.GetThreadTimeline(threadId));
+                Controller.RunVisitorForResult(contextSwitchesPerThreadVisitor, data.GetThreadTimeline(threadId));
+                Controller.RunVisitorForResult(hardFaultsPerThreadVisitor, data.GetThreadTimeline(threadId));
+                Controller.RunVisitorForResult(contextSwitchesPerMethodVisitor, data.GetThreadTimeline(threadId));
+                Controller.RunVisitorForResult(hardFaultsPerMethodVisitor, data.GetThreadTimeline(threadId));
 
                 Debug.Assert(jitTimeVisitor.State != EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error
                     && perceivedJitTimeVisitor.State != EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error);
 
-                _methodJitStatsPerThread.Add(threadId,
-                    ZipResults(jitTimeVisitor.Result, perceivedJitTimeVisitor.Result));
+                _methodJitStatsPerThread.Add(threadId, ZipResults(jitTimeVisitor.Result, perceivedJitTimeVisitor.Result));
 
                 var methodUniqueId = (jitMethodVisitor.Result == null) ? null : new MethodUniqueIdentifier(jitMethodVisitor.Result);
+
                 _firstMethodJitted.Add(threadId, methodUniqueId);
+
+                _contextSwitchesPerThread.Add(threadId, contextSwitchesPerThreadVisitor.Result);
+                _hardFaultsPerThread.Add(threadId, hardFaultsPerThreadVisitor.Result);
+
+                foreach (var item in contextSwitchesPerMethodVisitor.Result)
+                {
+                    _contextSwitchesPerMethod.Add(item.Key, item.Value);
+                }
+                foreach (var item in hardFaultsPerMethodVisitor.Result)
+                {
+                    _hardFaultsPerMethod.Add(item.Key, item.Value);
+                }
             }
             return this;
         }
@@ -78,13 +108,17 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                     writer.WriteHeader("Thread " + threadInfo.Key);
 
                     writer.AddIndentationLevel();
-                    if (_firstMethodJitted.TryGetValue(threadInfo.Key, out var methodUniqueId) && methodUniqueId != null)
+                    if (_firstMethodJitted.TryGetValue(threadInfo.Key, out var methodUniqueId))
                     {
-                        writer.WriteLine($"First jitted method {methodUniqueId.FullyQualifiedName}.");
+                        var firstJittedMethod = methodUniqueId == null ? "<none>" : methodUniqueId.FullyQualifiedName;
+
+                        writer.WriteLine($"First jitted method '{firstJittedMethod}'.");
                     }
                     writer.WriteLine(String.Format(FormatString, "Effective jitting time [ms]", threadJitTimes.JitTimeUsed));
                     writer.WriteLine(String.Format(FormatString, "Perceived jitting time [ms]", threadJitTimes.PerceivedJitTime));
                     writer.WriteLine(String.Format(FormatString, "Jit time usage efficiency [%]", efficiency));
+                    writer.WriteLine(String.Format(FormatString, "Total context switches", _contextSwitchesPerThread[ threadInfo.Key ]));
+                    writer.WriteLine(String.Format(FormatString, "Total page faults", _hardFaultsPerThread[threadInfo.Key]));
                     writer.RemoveIndentationLevel();
                 }
 
@@ -106,6 +140,8 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                         writer.WriteLine(String.Format(FormatString, "Effective jitting time [ms]", jitTime));
                         writer.WriteLine(String.Format(FormatString, "Perceived jitting time [ms]", perceivedTime));
                         writer.WriteLine(String.Format(FormatString, "Jit time usage efficiency [%]", 100.0 * jitTime / perceivedTime));
+                        writer.WriteLine(String.Format(FormatString, "Total context switches", _contextSwitchesPerMethod[methodIdJitTimePair.Key]));
+                        writer.WriteLine(String.Format(FormatString, "Total page faults", _hardFaultsPerMethod[methodIdJitTimePair.Key]));
 
                         writer.RemoveIndentationLevel();
                     }
