@@ -10,7 +10,9 @@ set CONFIGURATION=Release
 set APP=%ETWAPPDIR%\Microsoft.ETWLogAnalyzer.Sample\bin\%CONFIGURATION%\
 set REPORTS=%ETWAPPDIR%\Microsoft.ETWLogAnalyzer.Reports\bin\%CONFIGURATION%\
 set ETL=%BASEDIR%\JitBench\src\MusicStore\bin\%CONFIGURATION%\netcoreapp2.0\publish\PerfViewData.etl
+
 set OUT_DIR=E:\Reports
+set WAIT=true
 
 cd "%ETWAPPDIR%"
 echo %CD%
@@ -20,7 +22,7 @@ devenv Microsoft.ETWLogAnalyzer.sln /Clean %CONFIGURATION%
 devenv Microsoft.ETWLogAnalyzer.sln /Build %CONFIGURATION%
 
 cd "%APP%"
-Microsoft.ETWLogAnalyzer.Sample.exe /reportGenerators=%REPORTS% /target=dotnet /etwLog=%ETL% /out-dir=%OUT_DIR%
+Microsoft.ETWLogAnalyzer.Sample.exe /reportGenerators=%REPORTS% /target=dotnet /etwLog=%ETL% /out-dir=%OUT_DIR% /wait=%WAIT%
 
 cd %ORIGINALDIR%
 
