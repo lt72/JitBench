@@ -59,7 +59,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
 
                 var jitVisitor = new GetFirstMatchingEventVisitor<PARSERS.Clr.MethodLoadUnloadVerboseTraceData>();
 
-                var timeToMainVisitor = new GetFirstMatchingEventVisitor<TRACING.TraceEvent>((TRACING.TraceEvent ev) => { return ev.ProviderName == "aspnet-JitBench-MusicStore" && ev.EventName == "ProgramStarted"; } );
+                var timeToMainVisitor = new GetFirstMatchingEventVisitor<TRACING.TraceEvent>(ev => { return ev.ProviderName == "aspnet-JitBench-MusicStore" && ev.EventName == "ProgramStarted"; } );
                 var timeToServerStartedVisitor = new GetFirstMatchingEventVisitor<TRACING.TraceEvent>((TRACING.TraceEvent ev) => { return ev.ProviderName == "aspnet-JitBench-MusicStore" && ev.EventName == "ServerStarted"; });
                 var timeToFirstRequestVisitor = new GetFirstMatchingEventVisitor<TRACING.TraceEvent>((TRACING.TraceEvent ev) => { return ev.ProviderName == "aspnet-JitBench-MusicStore" && ev.EventName == "RequestBatchServed"; });
 

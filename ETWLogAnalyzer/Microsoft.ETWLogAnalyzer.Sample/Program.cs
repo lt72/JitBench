@@ -231,7 +231,7 @@ namespace Microsoft.ETWLogAnalyzer
 
             var model = new ETWData(putStart, putEnd, events);
 
-            Controller.SerializeDataModel( model, CmdLine.Arguments[CmdLine.EtwLogSwitch].Value);
+            // Controller.SerializeDataModel( model, CmdLine.Arguments[CmdLine.EtwLogSwitch].Value);
 
             return model;
         }

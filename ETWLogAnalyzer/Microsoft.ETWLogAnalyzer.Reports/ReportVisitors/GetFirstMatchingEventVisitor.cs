@@ -26,7 +26,5 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
                 Result = ev as R;
             }
         }
-
-        public R DefaultResult { get { return default(R); } }
     }
 }
