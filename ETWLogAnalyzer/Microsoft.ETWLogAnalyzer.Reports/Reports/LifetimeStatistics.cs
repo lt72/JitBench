@@ -45,7 +45,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             _processName = data.ProcessStart.ProcessName;
             _pid = data.ProcessStart.ProcessID;
 
-            foreach (int threadId in data.GetThreadList)
+            foreach (int threadId in data.ThreadList)
             {
                 var startVisitor = new GetFirstMatchingEventVisitor<PARSERS.Kernel.ThreadTraceData>(
                         x => x.Opcode == Diagnostics.Tracing.TraceEventOpcode.Start);

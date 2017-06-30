@@ -1,13 +1,14 @@
-﻿using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
+﻿using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 
 namespace Microsoft.ETWLogAnalyzer.Abstractions
 {
-    public sealed class MethodUniqueIdentifier
+    public sealed class MethodUniqueIdentifier : IConstructable<MethodUniqueIdentifier, PARSERS.Clr.MethodJittingStartedTraceData>
     {
-        private readonly long _methodId;
-        private readonly long _moduleId;
-        private readonly string _fullyQualName;
-        private readonly int _methodToken;
+        private long _methodId;
+        private long _moduleId;
+        private string _fullyQualName;
+        private int _methodToken;
 
         public long MethodId { get => _methodId; }
 
@@ -18,7 +19,23 @@ namespace Microsoft.ETWLogAnalyzer.Abstractions
         public long ModuleId { get => _moduleId; }
         
 
-        private MethodUniqueIdentifier() { }
+        public MethodUniqueIdentifier()
+        {
+            _methodToken = default(int);
+            _moduleId = default(long);
+            _methodId = default(long);
+            _fullyQualName = default(string);
+        }
+
+        public MethodUniqueIdentifier Create(MethodJittingStartedTraceData jitEv)
+        {
+            _methodToken = jitEv.MethodToken;
+            _moduleId = jitEv.ModuleID;
+            _methodId = jitEv.MethodID;
+            _fullyQualName = $"{jitEv.MethodNamespace}.{jitEv.MethodName}";
+
+            return this;
+        }
 
         public MethodUniqueIdentifier(PARSERS.Clr.MethodJittingStartedTraceData jitEv)
         {

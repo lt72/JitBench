@@ -4,7 +4,7 @@ using TRACING = Microsoft.Diagnostics.Tracing;
 
 namespace Microsoft.ETWLogAnalyzer.Abstractions
 {
-    public abstract class EventVisitor<T>
+    public abstract class EventVisitor<R>
     {
         public enum VisitorState { Continue, Done, Error };
 
@@ -25,7 +25,7 @@ namespace Microsoft.ETWLogAnalyzer.Abstractions
             return _relevantTypes.Contains(ev.GetType());
         }
 
-        public virtual T Result { get; protected set; }
+        public virtual R Result { get; protected set; }
 
         protected void AddRelevantTypes(List<Type> relevantTypesToAdd)
         {

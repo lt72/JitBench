@@ -143,7 +143,15 @@ namespace Microsoft.ETWLogAnalyzer
                 {
                     events.StoreIfRelevant(data);
                 };
-                
+
+                // Page faults
+
+                // File API's are ignored for now. We care about blocking I/O (where non-memory reads are necessary).
+                kernelParser.MemoryHardFault += delegate (PARSERS.Kernel.MemoryHardFaultTraceData data)
+                {
+                    events.StoreIfRelevant(data);
+                };
+
                 // I/O
 
                 // File API's are ignored for now. We care about blocking I/O (where non-memory reads are necessary).

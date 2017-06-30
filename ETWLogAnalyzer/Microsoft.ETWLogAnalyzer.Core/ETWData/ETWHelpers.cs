@@ -44,6 +44,7 @@ namespace Microsoft.ETWLogAnalyzer.Framework.Helpers
                 {
                     { typeof(PARSERS.Kernel.CSwitchTraceData), new ThreadCSwitchFilter(_pidUnderTest) },
                     { typeof(PARSERS.Kernel.ThreadTraceData), threadIDFilter },
+                    { typeof(PARSERS.Kernel.MemoryHardFaultTraceData), threadIDFilter},
                     { typeof(PARSERS.Kernel.DiskIOInitTraceData), ioFilter},
                     { typeof(PARSERS.Kernel.DiskIOTraceData), ioFilter},
                     { typeof(PARSERS.Clr.MethodJittingStartedTraceData), threadIDFilter },
