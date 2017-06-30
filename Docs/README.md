@@ -16,9 +16,9 @@
         - [1.4.3. Time To Program Start (Custom metric for JitBench)](#143-time-to-program-start-custom-metric-for-jitbench)
         - [1.4.4. Time To Server Start (Custom metric for JitBench)](#144-time-to-server-start-custom-metric-for-jitbench)
         - [1.4.5. Time To Request Served (Custom metric for JitBench)](#145-time-to-request-served-custom-metric-for-jitbench)
-        - [1.4.6. Effective Jit Time (Method)](#146-effective-jit-time-method)
-        - [1.4.7. Nominal Jit Time](#147-nominal-jit-time)
-        - [1.4.8. Available Time to Jit (Method)](#148-available-time-to-jit-method)
+        - [1.4.6. Nominal Jit Time](#146-nominal-jit-time)
+        - [1.4.7. Effective Jit Time](#147-effective-jit-time)
+        - [1.4.8. Available Time to Jit](#148-available-time-to-jit)
     - [1.5. Provided Implementations](#15-provided-implementations)
         - [1.5.1. Model - _ETWData_](#151-model---_etwdata_)
             - [1.5.1.1. The _ETWEventsHolder Helper_](#1511-the-_etweventsholder-helper_)
@@ -86,41 +86,70 @@ To run the sample app open an Visual Studio developer console with Admin privile
 
 The lifespan of a process is the time between the `Windows Kernel\Process\Start` and `Windows Kernel\Process\Stop` events.
 
-![Process Lifespan](Images/Process Lifespan.png)
+![Process Lifespan](Images/Process%20Lifespan.png)
 
 ### 1.4.2. Thread Lifespan
 
 The lifespan of a thread is the time between the `Windows Kernel\Thread\Start` and `Windows Kernel\Thread\Stop` events.
 
+![Thread lifespan](Images/Thread%20Lifespan.png)]
+
 ### 1.4.3. Time To Program Start (Custom metric for JitBench)
 
 The _time to program start_ is the time between the `Windows Kernel\Process\Start` and `aspnet-JitBench-MusicStore/ProgramStarted` events.
+
+![Time To Program Start](Images/Time%20To%20Program%20Start.png)
 
 ### 1.4.4. Time To Server Start (Custom metric for JitBench)
 
 The _time to program start_ is the time between the `Windows Kernel\Process\Start` and `aspnet-JitBench-MusicStore/ServerStarted` events.
 
+![Time To Server Start](Images/Time%20To%20Server%20Start.png)
+
 ### 1.4.5. Time To Request Served (Custom metric for JitBench)
 
 The _time to program start_ is the time between the `Windows Kernel\Process\Start` and the first `aspnet-JitBench-MusicStore/RequestBatchServed` events.
 
-### 1.4.6. Effective Jit Time (Method)
+![Time To Request Served](Images/Time%20To%20Request%20Served.png)
+
+### 1.4.6. Nominal Jit Time
+
+The _nominal jit time_ of a method is the time between its `JittingStarted` and `Method/LoadVerbose`events.
+
+![Nominal Jit Time of Method](Images/Nominal%20Jit%20Time%20Method.png)
+
+The _nominal jit time_ of a thread is the sum of the nominal jit times of the methods jitted in the thread.
+
+![Nominal Jit Time of Thread](Images/Nominal%20Jit%20Time%20Thread.png)
+
+
+### 1.4.7. Effective Jit Time
+
+The _effective jit time_ of a method is the time between its `Microsoft-Windows-DotNETRuntime/Method/JittingStarted` and `Method/LoadVerbose` events excluding the intervals where the jitting thread is switched out. For example if theres `N` context switche pairs between the `JittingStarted` and `LoadVerbose` then the effective time can be defined as:
+
+![Effective Jit Time of Method](Images/Effective%20Jit%20Time%20Method.png)
+
+It's worth noting that if there are no context switches, the effective and nominal times are equivalent.
+
+
+
+The _effective jit time_ of a thread is the sum of the effective jit times of the methods jitted in the thread.
+
+![Effective Jit Time of Thread](Images/Effective%20Jit%20Time%20Thread.png)
+
+### 1.4.8. Available Time to Jit
 
 HOLDER
-
-### 1.4.7. Nominal Jit Time
-
-The _nominal jit time_ of a method 
-
-The _nominal jit time_ of a thread is the sum 
-
-### 1.4.8. Available Time to Jit (Method)
 
 ## 1.5. Provided Implementations
 
 ### 1.5.1. Model - _ETWData_
 
+HOLDER
+
 #### 1.5.1.1. The _ETWEventsHolder Helper_
+
+HOLDER
 
 ### 1.5.2. Visitors
 
