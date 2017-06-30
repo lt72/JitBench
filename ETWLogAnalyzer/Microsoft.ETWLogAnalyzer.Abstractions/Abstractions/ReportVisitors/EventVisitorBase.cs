@@ -16,6 +16,8 @@ namespace Microsoft.ETWLogAnalyzer.Abstractions
         {
             _relevantTypes = new List<Type>();
             State = VisitorState.Continue;
+
+            Result = default(R);
         }
 
         public abstract void Visit(TRACING.TraceEvent ev);
