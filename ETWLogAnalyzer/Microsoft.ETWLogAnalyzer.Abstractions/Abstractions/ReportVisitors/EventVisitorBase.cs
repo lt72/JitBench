@@ -16,13 +16,23 @@ namespace Microsoft.ETWLogAnalyzer.Abstractions
         {
             _relevantTypes = new List<Type>();
             State = VisitorState.Continue;
+
+            Result = default(R);
         }
 
         public abstract void Visit(TRACING.TraceEvent ev);
 
         public virtual bool IsRelevant(TRACING.TraceEvent ev)
         {
-            return _relevantTypes.Contains(ev.GetType());
+            foreach (var type in _relevantTypes)
+            {
+                if (ev.GetType() == type || ev.GetType().IsSubclassOf(type))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public virtual R Result { get; protected set; }
@@ -31,5 +41,7 @@ namespace Microsoft.ETWLogAnalyzer.Abstractions
         {
             _relevantTypes.AddRange(relevantTypesToAdd);
         }
+
+        public R DefaultResult { get { return default(R); } }
     }
 }
