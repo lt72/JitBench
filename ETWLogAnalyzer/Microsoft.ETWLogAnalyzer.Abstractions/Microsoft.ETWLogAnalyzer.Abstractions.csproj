@@ -51,8 +51,6 @@
     <Compile Include="Abstractions\ReportVisitors\EventVisitorBase.cs" />
     <Compile Include="Abstractions\ReportVisitors\IConstructable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ReportWriters\PlainTextWriter.cs" />
-    <Compile Include="ReportWriters\TextReportWriter.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config">

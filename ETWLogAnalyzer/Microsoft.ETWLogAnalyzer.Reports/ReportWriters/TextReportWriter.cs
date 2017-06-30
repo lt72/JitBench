@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Microsoft.ETWLogAnalyzer.ReportWriters
 {
-    public class TextReportWriter : IDisposable
+    internal class TextReportWriter : IDisposable
     {
         private readonly TextWriter _stream;
         private int _intendationOffset;
