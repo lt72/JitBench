@@ -10,12 +10,21 @@
         - [1.2.3. ReportsVisitors](#123-reportsvisitors)
         - [1.2.4. Reports](#124-reports)
     - [1.3. How to use the tool with the sample app](#13-how-to-use-the-tool-with-the-sample-app)
-    - [1.4. Provided Implementations](#14-provided-implementations)
-        - [1.4.1. Model - _ETWData_](#141-model---_etwdata_)
-        - [1.4.2. Visitors](#142-visitors)
-        - [1.4.3. Reports](#143-reports)
-        - [1.4.4. Defined Metrics](#144-defined-metrics)
-    - [1.5. Relevant documentation for TraceEvents when generating your own reports](#15-relevant-documentation-for-traceevents-when-generating-your-own-reports)
+    - [1.4. Defined Metrics](#14-defined-metrics)
+        - [1.4.1. Process Lifespan](#141-process-lifespan)
+        - [1.4.2. Thread Lifespan](#142-thread-lifespan)
+        - [1.4.3. Time To Program Start (Custom metric for JitBench)](#143-time-to-program-start-custom-metric-for-jitbench)
+        - [1.4.4. Time To Server Start (Custom metric for JitBench)](#144-time-to-server-start-custom-metric-for-jitbench)
+        - [1.4.5. Time To Request Served (Custom metric for JitBench)](#145-time-to-request-served-custom-metric-for-jitbench)
+        - [1.4.6. Effective Jit Time (Method)](#146-effective-jit-time-method)
+        - [1.4.7. Nominal Jit Time](#147-nominal-jit-time)
+        - [1.4.8. Available Time to Jit (Method)](#148-available-time-to-jit-method)
+    - [1.5. Provided Implementations](#15-provided-implementations)
+        - [1.5.1. Model - _ETWData_](#151-model---_etwdata_)
+            - [1.5.1.1. The _ETWEventsHolder Helper_](#1511-the-_etweventsholder-helper_)
+        - [1.5.2. Visitors](#152-visitors)
+        - [1.5.3. Reports and understanding their significance](#153-reports-and-understanding-their-significance)
+    - [1.6. Relevant documentation for TraceEvents when generating your own reports](#16-relevant-documentation-for-traceevents-when-generating-your-own-reports)
 
 <!-- /TOC -->
 
@@ -27,17 +36,17 @@ ETWLogAnalyzer is an extensible framework that simplifies the analysis of the im
 
 ### 1.2.1. Data Storage - the model
 
-The model that stores the data gathered from the ETW log must implement the [IEventModel](..\ETWLogAnalyzer\Microsoft.ETWLogAnalyzer.Abstractions\Abstractions\Model\IEventModel.cs) interface. The idea is that the model provides at least these:
+The model that stores the data gathered from the ETW log must implement the [IEventModel](..\ETWLogAnalyzer\Microsoft.ETWLogAnalyzer.Abstractions\Abstractions\Model\IEventModel.cs) interface. The model provides the following:
 
-- Information of the process being examined (pid,  start and stop events, etc...).
-- List of the methods jitted and the threads used by the process.
-- API calls to get the events for a given thread and the thread that JITs a method.
+- Information for the target test process (pid,  start and stop events, etc...).
+- List of jitted methods and threads.
+- An event iterator for events that happened on a given thread, in time order (this includes JIT events, as well as OS events, such as context switches and page faults).
 
 A concrete example of the model is [ETWData](..\ETWLogAnalyzer\Microsoft.ETWLogAnalyzer.Core\ETWData\ETWData.cs).
 
 ### 1.2.2. The Controller
 
-The [controller](..\ETWLogAnalyzer\Microsoft.ETWLogAnalyzer.Core\Controller\Controller.cs) is the component of the framework that manages who has access to the data model and how they can access it as follows.
+The [controller](..\ETWLogAnalyzer\Microsoft.ETWLogAnalyzer.Core\Controller\Controller.cs) is the component of the framework that manages who has access to the data model and how they can access it as follows:
 
 - `RunVisitorForResult` - Reports will have to use a visitor to analyze the data provided by the model. This method will take the visitor and an iterator to the stream of events that need to be analyzed and run it for the result.
 - `ProcessReports` - Given the folder of the assemblies where the reports are and the data to analyze, the controller will generate them and dump them into the specified folder.
@@ -45,7 +54,7 @@ The [controller](..\ETWLogAnalyzer\Microsoft.ETWLogAnalyzer.Core\Controller\Cont
 
 ### 1.2.3. ReportsVisitors
 
-_Report visitors_ are the basic blocks that reports will use to perform analysis on the data. The convenient part is they are small objects of their own so they can store state that's usually needed for event series analysis (e.g a specific type of event sequence that seems to be a performance bottleneck). This might have to happen at the cost of multiple passes, but adds to the extensibility of the analysis tool which is our main focus.
+_Report visitors_ are the basic blocks that reports will use to perform analysis on the data. The convenient part is they are small objects of their own so they can store state that's usually needed for event series analysis (e.g a specific type of event sequence that seems to be a performance bottleneck). This might have to happen at the cost of multiple passes, but adds to the extensibility of the analysis tool which is our main focus. Current running time is contained under a few tens of seconds, so performance is not currently an issue.
 
 All visitors extend the generic class [EventVisitorBase](..\ETWLogAnalyzer\Microsoft.ETWLogAnalyzer.Abstractions\Abstractions\ReportVisitors\EventVisitorBase.cs), with the generic paraameter being the type of result expected from the calculation. Within the base class:
 
@@ -71,25 +80,66 @@ To run the sample app open an Visual Studio developer console with Admin privile
 - First you need to run the [data collection script](../Scripts/collect_etw_data.cmd). This will compile the JitBench app using a freshly downloaded version .NET core and collect the ETW log. There isn't any need to modify the script unless you want to modify what events get collected. The script also supports disabling superfetch to collect a cold start by running is with the `clean` argument (e.g. `collect_etw_data.cmd clean`).
 - Second run the [data analysis script](../Scripts/analyze_etw_data.cmd). You should modify the `OUT_DIR` variable script to point to the folder you want to store the reports to. You can modify the `WAIT` variable to false if you don't want the tool to wait for user input at the end as well.
 
-## 1.4. Provided Implementations
+## 1.4. Defined Metrics
 
-### 1.4.1. Model - _ETWData_
+### 1.4.1. Process Lifespan
 
-### 1.4.2. Visitors
+The lifespan of a process is the time between the `Windows Kernel\Process\Start` and `Windows Kernel\Process\Stop` events.
 
-- `AvailableQuantumAccumulatorVisitor`
-- `JitTimeAccumulatorVisitor`
+![Process Lifespan](Images/Process Lifespan.png)
+
+### 1.4.2. Thread Lifespan
+
+The lifespan of a thread is the time between the `Windows Kernel\Thread\Start` and `Windows Kernel\Thread\Stop` events.
+
+### 1.4.3. Time To Program Start (Custom metric for JitBench)
+
+The _time to program start_ is the time between the `Windows Kernel\Process\Start` and `aspnet-JitBench-MusicStore/ProgramStarted` events.
+
+### 1.4.4. Time To Server Start (Custom metric for JitBench)
+
+The _time to program start_ is the time between the `Windows Kernel\Process\Start` and `aspnet-JitBench-MusicStore/ServerStarted` events.
+
+### 1.4.5. Time To Request Served (Custom metric for JitBench)
+
+The _time to program start_ is the time between the `Windows Kernel\Process\Start` and the first `aspnet-JitBench-MusicStore/RequestBatchServed` events.
+
+### 1.4.6. Effective Jit Time (Method)
+
+HOLDER
+
+### 1.4.7. Nominal Jit Time
+
+The _nominal jit time_ of a method 
+
+The _nominal jit time_ of a thread is the sum 
+
+### 1.4.8. Available Time to Jit (Method)
+
+## 1.5. Provided Implementations
+
+### 1.5.1. Model - _ETWData_
+
+#### 1.5.1.1. The _ETWEventsHolder Helper_
+
+### 1.5.2. Visitors
+
+- `AvailableQuantumAccumulatorVisitor`: This visitor calculates the amount of time that could've potentially been used for jitting (see [](####)) by a thread segmented by method, returning a dictionary mapping MethodUniqueIdentifier to time taken.
+- `JitTimeAccumulatorVisitor`: This visitor calculates the amount of effective time that was used by a thread to jit, excluding the tsegmented by method, returning a dictionary mapping MethodUniqueIdentifier to time taken.
 - `GetFirstMatchingEventVisitor`
 - `PerceivedJitTimeVisitor`
 
-### 1.4.3. Reports
+### 1.5.3. Reports and understanding their significance
 
-- `JitStatistics`
+- `JitTimeStatistics`
 - `LifetimeStatistics`
-- `ThreadStatistics`
+  - Per Thread
+  - Per Method
+- `QuantumUsageStatistics`:
+  - Per Thread
+  - Per Method
+- `IOStatistics`: In Progress
 
-### 1.4.4. Defined Metrics
-
-## 1.5. Relevant documentation for TraceEvents when generating your own reports
+## 1.6. Relevant documentation for TraceEvents when generating your own reports
 
 The documents and release notes can be found in the [TraceEvent documentation](TraceEventDocs/) folder
