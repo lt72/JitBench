@@ -108,9 +108,9 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                 writer.WriteLine(String.Format(FormatString, "Process start time [ms]", _processStartTime));
                 writer.WriteLine(String.Format(FormatString, "Process stop time [ms]", _processEndTime));
                 writer.WriteLine(String.Format(FormatString, "Process duration [ms]", _processEndTime - _processStartTime));
-                writer.WriteLine(String.Format(FormatString, "Time to Main [ms]", _timeToMain));
-                writer.WriteLine(String.Format(FormatString, "Time to server started [ms]", _timeToServerStarted));
-                writer.WriteLine(String.Format(FormatString, "Time to first request [ms]", _timeToFirstRequest));
+                writer.WriteLine(String.Format(FormatString, "Time To Program Start [ms]", _timeToMain));
+                writer.WriteLine(String.Format(FormatString, "Time To Server Start [ms]", _timeToServerStarted));
+                writer.WriteLine(String.Format(FormatString, "Time To Request Served [ms]", _timeToFirstRequest));
 
                 writer.SkipLine();
                 writer.SkipLine();

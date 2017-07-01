@@ -18,10 +18,12 @@
         - [1.4.5. Time To Request Served (Custom metric for JitBench)](#145-time-to-request-served-custom-metric-for-jitbench)
         - [1.4.6. Nominal Jit Time](#146-nominal-jit-time)
         - [1.4.7. Effective Jit Time](#147-effective-jit-time)
-        - [1.4.8. Available Time to Jit](#148-available-time-to-jit)
+        - [1.4.8. Jit Time Usage Efficiency](#148-jit-time-usage-efficiency)
+        - [1.4.9. Quantum time assigned for jit](#149-quantum-time-assigned-for-jit)
+        - [1.4.10. Quantum Usage Efficiency](#1410-quantum-usage-efficiency)
     - [1.5. Provided Implementations](#15-provided-implementations)
         - [1.5.1. Model - _ETWData_](#151-model---_etwdata_)
-            - [1.5.1.1. The _ETWEventsHolder Helper_](#1511-the-_etweventsholder-helper_)
+            - [1.5.1.1. The _ETWEventsHolder Helper_ and _IEventFilters_](#1511-the-_etweventsholder-helper_-and-_ieventfilters_)
         - [1.5.2. Visitors](#152-visitors)
         - [1.5.3. Reports and understanding their significance](#153-reports-and-understanding-their-significance)
     - [1.6. Relevant documentation for TraceEvents when generating your own reports](#16-relevant-documentation-for-traceevents-when-generating-your-own-reports)
@@ -122,7 +124,6 @@ The _nominal jit time_ of a thread is the sum of the nominal jit times of the me
 
 ![Nominal Jit Time of Thread](Images/Nominal%20Jit%20Time%20Thread.png)
 
-
 ### 1.4.7. Effective Jit Time
 
 The _effective jit time_ of a method is the time between its `Microsoft-Windows-DotNETRuntime/Method/JittingStarted` and `Method/LoadVerbose` events excluding the intervals where the jitting thread is switched out. For example if theres `N` context switche pairs between the `JittingStarted` and `LoadVerbose` then the effective time can be defined as:
@@ -131,25 +132,45 @@ The _effective jit time_ of a method is the time between its `Microsoft-Windows-
 
 It's worth noting that if there are no context switches, the effective and nominal times are equivalent.
 
-
-
 The _effective jit time_ of a thread is the sum of the effective jit times of the methods jitted in the thread.
 
 ![Effective Jit Time of Thread](Images/Effective%20Jit%20Time%20Thread.png)
 
-### 1.4.8. Available Time to Jit
+### 1.4.8. Jit Time Usage Efficiency
 
-HOLDER
+The _JIT time usage efficiency_ for a method is the quotient between its [Effective Jit Time](#147-effective-jit-time) and [Nominal Jit Time](#146-nominal-jit-time) multiplied by a hundred.
+
+![Jit Time Efficiency for method](Images/Jit%20Time%20Efficiency.png)
+
+The _JIT time usage efficiency_ for a thread is the quotient [Effective Jit Time](#147-effective-jit-time) and the [Nominal Jit Time](#146-nominal-jit-time) for the thread multiplied by a hundred.
+
+![Jit Time Efficiency for Thread](Images/Jit%20Time%20Efficiency%20of%20Thread.png)
+
+### 1.4.9. Quantum time assigned for jit
+
+The _Quantum time assigned for jit_ for a method is the amount of time used to jit excluding the time the thread was scheduled out plus the amount of time remaining in the quantum allocated by the scheduler the JIT could've used but was scheduled out for some blocking operation (i.e. I/O)
+
+The _Quantum time assigned for jit_ for a thread is method is the sum of the Quantum time assigned for jitting of the methods jitted in the thread.
+
+### 1.4.10. Quantum Usage Efficiency
+
+The _Quantum Usage Efficiency_ for a method is the quotient between its [Effective Jit Time](#147-effective-jit-time) and [Quantum time assigned for jit](#149-quantum-time-assigned-for-jit) multiplied by a hundred.
+
+![Jit Time Efficiency for method](Images/QuantumEfficiencyMethod.png)
+
+The _JIT time usage efficiency_ for a thread is the quotient [Effective Jit Time](#147-effective-jit-time) and the [Quantum time assigned for jit](#149-quantum-time-assigned-for-jit) for the thread multiplied by a hundred.
+
+![Jit Time Efficiency for Thread](Images/QuantumEfficiencyThread.png)
 
 ## 1.5. Provided Implementations
 
 ### 1.5.1. Model - _ETWData_
 
-HOLDER
+This section will get updated later
 
-#### 1.5.1.1. The _ETWEventsHolder Helper_
+#### 1.5.1.1. The _ETWEventsHolder Helper_ and _IEventFilters_
 
-HOLDER
+This section will get updated later
 
 ### 1.5.2. Visitors
 
@@ -160,14 +181,10 @@ HOLDER
 
 ### 1.5.3. Reports and understanding their significance
 
-- `JitTimeStatistics`
-- `LifetimeStatistics`
-  - Per Thread
-  - Per Method
-- `QuantumUsageStatistics`:
-  - Per Thread
-  - Per Method
-- `IOStatistics`: In Progress
+- `LifetimeStatistics`: This report contains the process and thread lifetime information as well as the JitBench specific statistics described in the [metrics](#14-defined-metrics) section.
+- `JitTimeStatistics`: This report contains all the _nominal_ and _effective_ jit times as well as the _jit time efficiency_ per thread and method.
+- `QuantumUsageStatistics`: This report contains a per thread and per method breakdown of the _effective_ time used to jit as well as how much time was requested for this task (see [Available Time to Jit](#149-quantum-time-assigned-for-jit)) and their quotient (i.e. the Quantum Usage Efficiency).
+- `IOStatistics`: Under development.
 
 ## 1.6. Relevant documentation for TraceEvents when generating your own reports
 

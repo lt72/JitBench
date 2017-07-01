@@ -115,7 +115,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                         writer.WriteLine($"First jitted method '{firstJittedMethod}'.");
                     }
                     writer.WriteLine(String.Format(FormatString, "Effective jitting time [ms]", threadJitTimes.JitTimeUsed));
-                    writer.WriteLine(String.Format(FormatString, "Perceived jitting time [ms]", threadJitTimes.PerceivedJitTime));
+                    writer.WriteLine(String.Format(FormatString, "Nominal jitting time [ms]", threadJitTimes.PerceivedJitTime));
                     writer.WriteLine(String.Format(FormatString, "Jit time usage efficiency [%]", efficiency));
                     writer.WriteLine(String.Format(FormatString, "Total context switches", _contextSwitchesPerThread[ threadInfo.Key ]));
                     writer.WriteLine(String.Format(FormatString, "Total page faults", _hardFaultsPerThread[threadInfo.Key]));
