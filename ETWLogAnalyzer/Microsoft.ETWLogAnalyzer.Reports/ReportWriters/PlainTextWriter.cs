@@ -2,7 +2,7 @@
 
 namespace Microsoft.ETWLogAnalyzer.ReportWriters
 {
-    public class PlainTextWriter : TextReportWriter
+    internal class PlainTextWriter : TextReportWriter
     {
         public PlainTextWriter(string file) : base(new StreamWriter(file))
         {
