@@ -49,8 +49,8 @@ namespace Microsoft.ETWLogAnalyzer.Framework.Helpers
                     { typeof(PARSERS.Kernel.DiskIOTraceData), ioFilter},
                     { typeof(PARSERS.Clr.MethodJittingStartedTraceData), threadIDFilter },
                     { typeof(PARSERS.Clr.MethodLoadUnloadVerboseTraceData), threadIDFilter },
-                    { typeof(PARSERS.Clr.AssemblyLoadUnloadTraceData), threadIDFilter }
-                    // TODO: Add ready thread filter
+                    { typeof(PARSERS.Clr.AssemblyLoadUnloadTraceData), threadIDFilter },
+                    { typeof(PARSERS.Kernel.DispatcherReadyThreadTraceData), new ReadyThreadFilter(_pidUnderTest) }
                 };
         }
 
