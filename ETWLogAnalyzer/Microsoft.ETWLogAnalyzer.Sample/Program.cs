@@ -170,13 +170,6 @@ namespace Microsoft.ETWLogAnalyzer
                 // CLR events
 
                 PARSERS.ClrTraceEventParser clrParser = source.Clr;
-                
-                // Thread creating
-
-                clrParser.ThreadCreating += delegate (PARSERS.Clr.ThreadStartWorkTraceData data)
-                {
-                    events.StoreIfRelevant(data);
-                };
 
                 // JIT Start and Stop
                 

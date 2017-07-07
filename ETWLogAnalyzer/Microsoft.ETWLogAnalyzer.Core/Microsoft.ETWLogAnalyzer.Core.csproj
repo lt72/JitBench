@@ -49,6 +49,7 @@
     <Compile Include="ETWData\ETWData.cs" />
     <Compile Include="ETWData\ETWHelpers.cs" />
     <Compile Include="EventFilters\IOFilter.cs" />
+    <Compile Include="EventFilters\ReadyThreadFilter.cs" />
     <Compile Include="EventFilters\ThreadCSwitchFilter.cs" />
     <Compile Include="EventFilters\ThreadIDFilter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
