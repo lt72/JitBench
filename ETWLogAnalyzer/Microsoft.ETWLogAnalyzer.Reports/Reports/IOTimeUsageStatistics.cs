@@ -98,6 +98,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
 
             if (timeAllocInfo.PerceivedJitTime > 0)
             {
+                writer.SkipLine();
                 writer.WriteLine(String.Format(FormatString, "Jitting share [%]", 100.0 * timeAllocInfo.EffectiveJitTime / timeAllocInfo.PerceivedJitTime));
                 writer.WriteLine(String.Format(FormatString, "I/O share [%]", 100.0 * timeAllocInfo.IOTime / timeAllocInfo.PerceivedJitTime));
                 writer.WriteLine(String.Format(FormatString, "Idle share [%]", 100.0 * timeAllocInfo.IdleTime / timeAllocInfo.PerceivedJitTime));
