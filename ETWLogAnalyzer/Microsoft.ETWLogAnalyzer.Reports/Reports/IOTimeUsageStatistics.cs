@@ -1,17 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Microsoft.ETWLogAnalyzer.Abstractions;
 using Microsoft.ETWLogAnalyzer.ReportVisitors;
 using Microsoft.ETWLogAnalyzer.ReportWriters;
 using Microsoft.ETWLogAnalyzer.Framework;
 
-using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
-
 namespace Microsoft.ETWLogAnalyzer.Reports
 {
-    class IOTimeUsageStatistics : IReport
+    public class IOTimeUsageStatistics : IReport
     {
         private class TimeAllocationInfo
         {
@@ -48,7 +45,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             {
                 var jitTimeVisitor = new JitTimeAccumulatorVisitor(threadId);
                 var perceivedJitTimeVisitor = new PerceivedJitTimeVisitor(threadId);
-                var unscheduledTimeClassifierVisitor = new UnscheduledTimeClassifierVisitor();
+                var unscheduledTimeClassifierVisitor = new UnscheduledTimeClassifierVisitor(threadId);
 
                 Controller.RunVisitorForResult(jitTimeVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(perceivedJitTimeVisitor, data.GetThreadTimeline(threadId));
@@ -70,16 +67,8 @@ namespace Microsoft.ETWLogAnalyzer.Reports
 
                 foreach (var threadInfo in _methodUnscheduledTimeStats)
                 {
-                    TimeAllocationInfo threadJitTimes = AccumulateMethodTimes(threadInfo.Value);
                     writer.WriteHeader("Thread " + threadInfo.Key);
-
-                    writer.AddIndentationLevel();
-                    writer.WriteLine(String.Format(FormatString, "Effective jitting time [ms]", threadJitTimes.EffectiveJitTime));
-                    writer.WriteLine(String.Format(FormatString, "Nominal jitting time [ms]", threadJitTimes.PerceivedJitTime));
-                    writer.WriteLine(String.Format(FormatString, "I/O time [ms]", threadJitTimes.PerceivedJitTime));
-                    writer.WriteLine(String.Format(FormatString, "Idle time [ms]", threadJitTimes.PerceivedJitTime));
-                    writer.WriteLine(String.Format(FormatString, "Non-I/O unscheduled time [ms]", threadJitTimes.PerceivedJitTime));
-                    writer.RemoveIndentationLevel();
+                    WriteTimeAlloc(writer, AccumulateMethodTimes(threadInfo.Value));
                 }
 
                 writer.SkipLine();
@@ -92,18 +81,30 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                     foreach (var methodIdTimeAllodPair in methodsInThread)
                     {
                         writer.WriteHeader("Method " + methodIdTimeAllodPair.Key);
-
-                        writer.AddIndentationLevel();
-                        TimeAllocationInfo methodAllocTimeInfo = methodIdTimeAllodPair.Value;
-                        writer.WriteLine(String.Format(FormatString, "Effective jitting time [ms]", methodAllocTimeInfo.EffectiveJitTime));
-                        writer.WriteLine(String.Format(FormatString, "Nominal jitting time [ms]", methodAllocTimeInfo.PerceivedJitTime));
-                        writer.WriteLine(String.Format(FormatString, "I/O time [ms]", methodAllocTimeInfo.PerceivedJitTime));
-                        writer.WriteLine(String.Format(FormatString, "Idle time [ms]", methodAllocTimeInfo.PerceivedJitTime));
-                        writer.WriteLine(String.Format(FormatString, "Non-I/O unscheduled time [ms]", methodAllocTimeInfo.PerceivedJitTime));
-                        writer.RemoveIndentationLevel();
+                        WriteTimeAlloc(writer, methodIdTimeAllodPair.Value);
                     }
                 }
             }
+        }
+
+        private void WriteTimeAlloc(TextReportWriter writer, TimeAllocationInfo timeAllocInfo)
+        {
+            writer.AddIndentationLevel();
+            writer.WriteLine(String.Format(FormatString, "Effective jitting time [ms]", timeAllocInfo.EffectiveJitTime));
+            writer.WriteLine(String.Format(FormatString, "Nominal jitting time [ms]", timeAllocInfo.PerceivedJitTime));
+            writer.WriteLine(String.Format(FormatString, "I/O time [ms]", timeAllocInfo.IOTime));
+            writer.WriteLine(String.Format(FormatString, "Idle time [ms]", timeAllocInfo.IdleTime));
+            writer.WriteLine(String.Format(FormatString, "Non-I/O unscheduled time [ms]", timeAllocInfo.UnscheduledNonIOTime));
+
+            if (timeAllocInfo.PerceivedJitTime > 0)
+            {
+                writer.WriteLine(String.Format(FormatString, "Jitting share [%]", 100.0 * timeAllocInfo.EffectiveJitTime / timeAllocInfo.PerceivedJitTime));
+                writer.WriteLine(String.Format(FormatString, "I/O share [%]", 100.0 * timeAllocInfo.IOTime / timeAllocInfo.PerceivedJitTime));
+                writer.WriteLine(String.Format(FormatString, "Idle share [%]", 100.0 * timeAllocInfo.IdleTime / timeAllocInfo.PerceivedJitTime));
+                writer.WriteLine(String.Format(FormatString, "Non-I/O unscheduled share [%]", 100.0 * timeAllocInfo.UnscheduledNonIOTime / timeAllocInfo.PerceivedJitTime));
+            }
+            
+            writer.RemoveIndentationLevel();
         }
 
         private TimeAllocationInfo AccumulateMethodTimes(Dictionary<MethodUniqueIdentifier, TimeAllocationInfo> threadsMethodTimeAllocs)

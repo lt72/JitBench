@@ -18,6 +18,7 @@ namespace Microsoft.ETWLogAnalyzer.Framework
             {
                 if (visitor.IsRelevant(iterator.Current))
                 {
+                    double d = iterator.Current.TimeStampRelativeMSec;
                     visitor.Visit(iterator.Current);
                 }
             }
