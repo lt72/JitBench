@@ -25,7 +25,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             }
         }
 
-        private static readonly string FormatString = "{0, -35}:\t{1,9}";
+        private static readonly string FormatString = "{0, -35}:\t{1:F2}";
 
         private Dictionary<int, Dictionary<MethodUniqueIdentifier, JitTimeInfo>> _methodJitStatsPerThread;
         private Dictionary<int, MethodUniqueIdentifier> _firstMethodJitted;

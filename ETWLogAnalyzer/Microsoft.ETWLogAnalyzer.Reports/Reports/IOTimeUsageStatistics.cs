@@ -37,7 +37,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
 
 
         public string Name => "io_time_usage_stats.txt";
-        private static readonly string FormatString = "{0, -35}:\t{1,9}";
+        private static readonly string FormatString = "{0, -35}:\t{1:F2}";
 
         public IReport Analyze(IEventModel data)
         {
