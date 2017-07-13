@@ -72,7 +72,7 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
                 }
 
                 _accumulator += jitEndEv.TimeStampRelativeMSec - _lastSwitchinOrJitStart;
-                Result.Add(new MethodUniqueIdentifier(_methodJitting), _accumulator);
+                Result.Add(new MethodUniqueIdentifier(jitEndEv), _accumulator);
 
                 _internalState = InternalState.JitFinished;
                 _methodJitting = null;

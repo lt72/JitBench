@@ -10,16 +10,15 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
     public class GetCountEventsBetweenAllStartStopEventsPairVisitor<S,E,T,K> : EventVisitor<Dictionary<K,long>>
         where S : TRACING.TraceEvent
         where E : TRACING.TraceEvent
-        where K : IConstructable<K, S>, new()
+        where K : IConstructable<K, E>, new()
     {
         private bool _active;
-        private K _current;
+        private long _curCount;
         private readonly bool _checkOpcode;
 
         public GetCountEventsBetweenAllStartStopEventsPairVisitor(bool checkOpcode) : base()
         {
             _active = false;
-            _current = default(K);
             _checkOpcode = checkOpcode;
 
             AddRelevantTypes(new List<Type> { typeof(T), typeof(S), typeof(E) });
@@ -38,11 +37,7 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
             {
                 if (MarksStart(ev))
                 {
-                    _current = new K().Create((S)ev);
-
-                    Debug.Assert(Result.ContainsKey(_current) == false);
-
-                    Result.Add(_current, 0);
+                    _curCount = 0;
                 }
             }
 
@@ -53,9 +48,7 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
             {
                 if (MarksStart(ev))
                 {
-                    Debug.Assert(Result.ContainsKey(_current) == true);
-
-                    Result[_current] = 0;
+                    _curCount = 0;
                 }
             }
 
@@ -69,15 +62,15 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
 
             if (ev.GetType() == typeof(T))
             {
-                Result[_current] += 1;
+                _curCount += 1;
             }
 
-            if (ev.GetType() == typeof(E))
+            if (ev is E evAsE)
             {
                 if (MarksStop(ev))
                 {
                     _active = false;
-                    _current = default(K);
+                    Result.Add(new K().Create(evAsE), _curCount);
                 }
             }
         }
