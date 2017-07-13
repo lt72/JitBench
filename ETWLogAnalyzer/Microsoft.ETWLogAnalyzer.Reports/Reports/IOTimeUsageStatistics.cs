@@ -129,8 +129,8 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                     let ioTime = unschedulesTimes[methodUniqueId].ioTime
                     let otherUnscheduledTime = unschedulesTimes[methodUniqueId].otherUnscheduledTime
                     let idleTime = unschedulesTimes[methodUniqueId].idleTime
-                    select (methodUniqueId, new TimeAllocationInfo(perceivedTime, effectiveTime, idleTime, ioTime, otherUnscheduledTime)))
-                    .ToDictionary(x => x.Item1, x => x.Item2);
+                    select (methodUniqueId, timeAlloc: new TimeAllocationInfo(perceivedTime, effectiveTime, idleTime, ioTime, otherUnscheduledTime)))
+                    .ToDictionary(x => x.methodUniqueId, x => x.timeAlloc);
         }
     }
 }
