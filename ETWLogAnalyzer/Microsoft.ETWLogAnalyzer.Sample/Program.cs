@@ -8,7 +8,7 @@ using Microsoft.ETWLogAnalyzer.Framework;
 
 namespace Microsoft.ETWLogAnalyzer
 {
-    public class Program
+    public static class Program
     {
         static Program()
         {
