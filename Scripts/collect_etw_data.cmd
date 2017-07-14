@@ -1,4 +1,5 @@
 @echo off
+SETLOCAL EnableDelayedExpansion
 REM [-ClrEvents:Default]                 A comma separated list of .NET CLR events to turn on.  See Users guide for
 REM                                      details.  Legal values: None, GC, GCHandle, Binder, Loader, Jit, NGen,
 REM                                      StartEnumeration, StopEnumeration, Security, AppDomainResourceManagement,
@@ -37,8 +38,8 @@ set KERNEL_EVENTS="Verbose"
 
 
 cd "%BASEDIR%"
-powershell "%SCRIPTDIR%\Dotnet-Install.ps1" -SharedRuntime -InstallDir .dotnet -Channel master -Architecture x64 -Version 2.0.0-preview3-25426-01
-powershell "%SCRIPTDIR%\Dotnet-Install.ps1" -InstallDir .dotnet -Channel master -Architecture x64
+powershell "%SCRIPTDIR%\Dotnet-Install.ps1" -SharedRuntime -InstallDir .dotnet -Channel master -Architecture x64 -Version 2.1.0-preview2-25513-01
+powershell "%SCRIPTDIR%\Dotnet-Install.ps1" -InstallDir .dotnet -Channel master -Architecture x64 -Version 2.1.0-preview1-006776
 
 cd "%APPDIR%"
 "%DOTNET%" nuget locals --clear all

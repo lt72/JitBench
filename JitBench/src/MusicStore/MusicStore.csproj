@@ -13,22 +13,14 @@
     <IsPackable>false</IsPackable>
     
     <!-- This will be set as an environment variable to pin the version. -->
-    <AspNetVersion>$(JITBENCH_ASPNET_VERSION)</AspNetVersion>
-    <RuntimeFrameworkVersion>$(JITBENCH_FRAMEWORK_VERSION)</RuntimeFrameworkVersion>
+    <AspNetVersion>2.0.0-rtm-26320</AspNetVersion>
+    <RuntimeFrameworkVersion>2.1.0-preview2-25513-01</RuntimeFrameworkVersion>
   </PropertyGroup>
 
   <!-- View Compilation on publish is off by default -->
   <PropertyGroup Condition=" '$(MvcRazorCompileOnPublish)' == '' ">
     <MvcRazorCompileOnPublish>false</MvcRazorCompileOnPublish>
   </PropertyGroup>
-  
-  <PropertyGroup Condition=" '$(AspNetVersion)' == '' ">
-    <AspNetVersion>2.0.0-*</AspNetVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(RuntimeFrameworkVersion)' == '' ">
-    <RuntimeFrameworkVersion>2.0.0-*</RuntimeFrameworkVersion>
-  </PropertyGroup>
-  
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.All">
       <Version>$(AspNetVersion)</Version>
