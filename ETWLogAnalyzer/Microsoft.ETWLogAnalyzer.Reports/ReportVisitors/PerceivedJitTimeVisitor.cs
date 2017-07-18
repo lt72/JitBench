@@ -38,6 +38,7 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
                     return;
                 }
 
+                _methodToJitStart.Remove(jitEndEv.MethodID);
                 Result.Add(new MethodUniqueIdentifier(jitEndEv), 
                     jitEndEv.TimeStampRelativeMSec - matchJitStart.TimeStampRelativeMSec);
             }
