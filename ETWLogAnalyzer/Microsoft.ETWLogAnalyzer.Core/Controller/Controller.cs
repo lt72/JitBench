@@ -36,7 +36,7 @@ namespace Microsoft.ETWLogAnalyzer.Framework
             }
         }
         
-        public static IList<Abstractions.IReport> LoadReports(string reportsPath)
+        private static IList<Abstractions.IReport> LoadReports(string reportsPath)
         {
             IList<Abstractions.IReport> reports = new List<Abstractions.IReport>();
 
