@@ -117,7 +117,7 @@ echo.
 echo.
 echo All arguments are optional. The following options are available:
 echo.
-echo     DisableSuperfetch: Disables SuperFetch to prevent image warming.
+echo     DisableSuperfetch: Disables SuperFetch to prevent image warming. EXPERIMENTAL: Need to modify runtime. Read documentation for this
 echo.
 echo     KeepCache: Can be used if the local nuget caches shouldn't be cleared.
 echo.
