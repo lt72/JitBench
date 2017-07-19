@@ -26,17 +26,77 @@ namespace Microsoft.ETWLogAnalyzer.Framework
 
         public static void ProcessReports(string reportsFolder, string outputFolder, ETWData etwData)
         {
-            string baseFolder = System.Environment.ExpandEnvironmentVariables(outputFolder);
-            
-            foreach (Abstractions.IReport report in LoadReports( reportsFolder ))
+            string baseFolder = Environment.ExpandEnvironmentVariables(outputFolder);
+            string logFilePath = Path.Combine(baseFolder, "report_status.log");
+            Console.WriteLine($"Writing reports to {baseFolder}. See log stored in the same path for details.");
+            using (var logFile = new System.IO.StreamWriter(logFilePath))
             {
-                System.Console.WriteLine($"Writing report {report.Name} to {baseFolder}...");
-
-                report.Analyze(etwData).Persist(baseFolder);
+                foreach (Abstractions.IReport report in LoadReports(reportsFolder, logFile))
+                {
+                    try
+                    {
+                        if (!report.Analyze(etwData).Persist(baseFolder))
+                        {
+                            logFile.WriteLine($"ERROR: Processing report {report.Name}. Unexpected error received.");
+                        }
+                        else
+                        {
+                            logFile.WriteLine($"SUCCESS: Report {report.Name} written to {baseFolder}");
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        logFile.WriteLine($"ERROR: Report {report.Name} finished with unhandled exception. Message: {exception.Source}::{exception.Message}.");
+                        continue;
+                    }
+                }
             }
         }
-        
-        private static IList<Abstractions.IReport> LoadReports(string reportsPath)
+
+        public static void SerializeDataModel(ETWData model, string filePath)
+        {
+            try
+            {
+                XmlSerializer formatter = new XmlSerializer(typeof(ETWData));
+                using (FileStream fs = new FileStream(GetSerializedModelFilePath(filePath), FileMode.Create))
+                {
+                    formatter.Serialize(fs, model);
+                }
+            }
+            catch (SerializationException ex)
+            {
+                Console.WriteLine("Failed to serialize. Reason: " + ex.Message);
+                throw;
+            }
+        }
+
+        public static ETWData DeserializeDataModel(string filePath)
+        {
+            ETWData model = null;
+
+            try
+            {
+                XmlSerializer formatter = new XmlSerializer(typeof(ETWData));
+                using (FileStream fs = new FileStream(GetSerializedModelFilePath(filePath), FileMode.Open))
+                {
+                    model = (ETWData)formatter.Deserialize(fs);
+                }
+            }
+            catch (SerializationException ex)
+            {
+                Console.WriteLine("Failed to deserialize. Reason: " + ex.Message);
+                throw;
+            }
+
+            return model;
+        }
+
+        public static string GetSerializedModelFilePath(string filePath)
+        {
+            return $"{filePath}" + ".xml";
+        }
+
+        private static IList<Abstractions.IReport> LoadReports(string reportsPath, StreamWriter logFile)
         {
             IList<Abstractions.IReport> reports = new List<Abstractions.IReport>();
 
@@ -75,7 +135,7 @@ namespace Microsoft.ETWLogAnalyzer.Framework
 
                         if(obj == null)
                         {
-                            Console.WriteLine($"Failed to create instance of report for type {t.FullName}. Report will not be generated.");
+                            logFile.WriteLine($"ERROR: Failed to create instance of report for type {t.FullName}. Report will not be generated.");
                             continue;
                         }
 
@@ -85,49 +145,6 @@ namespace Microsoft.ETWLogAnalyzer.Framework
             }
 
             return reports;
-        }
-
-        public static void SerializeDataModel(ETWData model, string filePath)
-        {
-            try
-            {
-                XmlSerializer formatter = new XmlSerializer(typeof(ETWData));
-                using (FileStream fs = new FileStream(GetSerializedModelFilePath(filePath), FileMode.Create))
-                {
-                    formatter.Serialize(fs, model);
-                }
-            }
-            catch (SerializationException ex)
-            {
-                Console.WriteLine("Failed to serialize. Reason: " + ex.Message);
-                throw;
-            }
-        }
-
-        public static ETWData DeserializeDataModel(string filePath)
-        {
-            ETWData model = null;
-
-            try
-            {
-                XmlSerializer formatter = new XmlSerializer(typeof(ETWData));
-                using (FileStream fs = new FileStream(GetSerializedModelFilePath(filePath), FileMode.Open))
-                {
-                    model = (ETWData)formatter.Deserialize(fs);
-                }
-            }
-            catch(SerializationException ex)
-            {
-                Console.WriteLine("Failed to deserialize. Reason: " + ex.Message);
-                throw;
-            }
-
-            return model;
-        }
-
-        public static string GetSerializedModelFilePath(string filePath)
-        {
-            return $"{filePath}"+".xml";
         }
     }
 }

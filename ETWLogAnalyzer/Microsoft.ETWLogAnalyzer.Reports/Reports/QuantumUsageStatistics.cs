@@ -33,19 +33,19 @@ namespace Microsoft.ETWLogAnalyzer.Reports
         private Dictionary<int, long> _hardFaultsPerThread;
         private Dictionary<MethodUniqueIdentifier, long> _contextSwitchesPerMethod;
         private Dictionary<MethodUniqueIdentifier, long> _hardFaultsPerMethod;
+        public string Name => "quantum_usage_stats.txt";
+        public bool IsInErrorState { get; private set; }
 
         public QuantumUsageStatistics()
         {
             _methodJistStatsPerThread = new Dictionary<int, Dictionary<MethodUniqueIdentifier, QuantumTimeInfo>>();
             _firstMethodJitted = new Dictionary<int, MethodUniqueIdentifier>();
-
             _contextSwitchesPerThread = new Dictionary<int, long>();
             _hardFaultsPerThread = new Dictionary<int, long>();
             _contextSwitchesPerMethod = new Dictionary<MethodUniqueIdentifier, long>();
             _hardFaultsPerMethod = new Dictionary<MethodUniqueIdentifier, long>();
+            IsInErrorState = false;
         }
-
-        public string Name => "quantum_usage_stats.txt";
 
         public IReport Analyze(IEventModel data)
         {
@@ -67,8 +67,18 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                 Controller.RunVisitorForResult(contextSwitchesPerMethodVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(hardFaultsPerMethodVisitor, data.GetThreadTimeline(threadId));
 
-                Debug.Assert(jitTimeVisitor.State != EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error
-                    && availableQuantumTimeVisitor.State != EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error);
+                IsInErrorState |= jitTimeVisitor.State == EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error
+                    || availableQuantumTimeVisitor.State == EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error
+                    || jitMethodVisitor.State == EventVisitor<PARSERS.Clr.MethodLoadUnloadVerboseTraceData>.VisitorState.Error
+                    || contextSwitchesPerMethodVisitor.State == EventVisitor<Dictionary<MethodUniqueIdentifier, long>>.VisitorState.Error
+                    || hardFaultsPerMethodVisitor.State == EventVisitor<Dictionary<MethodUniqueIdentifier, long>>.VisitorState.Error
+                    || hardFaultsPerThreadVisitor.State == EventVisitor<long>.VisitorState.Error
+                    || contextSwitchesPerThreadVisitor.State == EventVisitor<long>.VisitorState.Error;
+
+                if (IsInErrorState)
+                {
+                    break;
+                }
 
                 _methodJistStatsPerThread.Add(threadId,
                     ZipResults(jitTimeVisitor.Result, availableQuantumTimeVisitor.Result));
@@ -91,8 +101,13 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             return this;
         }
 
-        public void Persist(string folderPath)
+        public bool Persist(string folderPath)
         {
+            if (IsInErrorState)
+            {
+                return false;
+            }
+
             using (var writer = new ReportWriters.PlainTextWriter(System.IO.Path.Combine(folderPath, Name)))
             {
                 writer.WriteTitle("Thread Usage with Respect to Jitting");
@@ -146,6 +161,8 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                     }
                 }
             }
+
+            return true;
         }
 
         // Helpers

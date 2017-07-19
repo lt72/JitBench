@@ -28,16 +28,16 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             }
         }
 
+        private static readonly string FormatString = "{0, -35}:\t{1:F2}";
         private Dictionary<int, Dictionary<MethodUniqueIdentifier, TimeAllocationInfo>> _methodUnscheduledTimeStats;
+        public string Name => "io_time_usage_stats.txt";
+        public bool IsInErrorState { get; private set; }
 
         public IOTimeUsageStatistics()
         {
             _methodUnscheduledTimeStats = new Dictionary<int, Dictionary<MethodUniqueIdentifier, TimeAllocationInfo>>();
+            IsInErrorState = false;
         }
-
-
-        public string Name => "io_time_usage_stats.txt";
-        private static readonly string FormatString = "{0, -35}:\t{1:F2}";
 
         public IReport Analyze(IEventModel data)
         {
@@ -51,6 +51,15 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                 Controller.RunVisitorForResult(perceivedJitTimeVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(unscheduledTimeClassifierVisitor, data.GetThreadTimeline(threadId));
 
+                IsInErrorState |= jitTimeVisitor.State == EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error
+                    || perceivedJitTimeVisitor.State == EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error
+                    || unscheduledTimeClassifierVisitor.State == EventVisitor<Dictionary<MethodUniqueIdentifier, (double idleTime, double ioTime, double otherUnscheduledTime)>>.VisitorState.Error;
+
+                if (IsInErrorState)
+                {
+                    break;
+                }
+
                 _methodUnscheduledTimeStats.Add(threadId, CombineResultsByMethod(
                     jitTimeVisitor.Result, perceivedJitTimeVisitor.Result, unscheduledTimeClassifierVisitor.Result));
             }
@@ -58,8 +67,13 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             return this;
         }
 
-        public void Persist(string folderPath)
+        public bool Persist(string folderPath)
         {
+            if (IsInErrorState)
+            {
+                return false;
+            }
+
             using (var writer = new PlainTextWriter(System.IO.Path.Combine(folderPath, Name)))
             {
                 writer.WriteTitle("Jit time allocation statistics per thread");
@@ -85,6 +99,8 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                     }
                 }
             }
+
+            return true;
         }
 
         private void WriteTimeAlloc(TextReportWriter writer, TimeAllocationInfo timeAllocInfo)

@@ -34,13 +34,14 @@ namespace Microsoft.ETWLogAnalyzer.Reports
         private string _processName;
         private int _pid;
         private Dictionary<int, ThreadLifeInfo> _threadInfoTable;
+        public string Name => "lifetime_stats.txt";
+        public bool IsInErrorState { get; private set; }
 
         public LifetimeStatistics()
         {
             _threadInfoTable = new Dictionary<int, ThreadLifeInfo>();
+            IsInErrorState = false;
         }
-
-        public string Name => "lifetime_stats.txt";
 
         public IReport Analyze(IEventModel data)
         {
@@ -53,12 +54,9 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             {
                 var startVisitor = new GetFirstMatchingEventVisitor<PARSERS.Kernel.ThreadTraceData>(
                         x => x.Opcode == Diagnostics.Tracing.TraceEventOpcode.Start);
-
                 var stopVisitor = new GetFirstMatchingEventVisitor<PARSERS.Kernel.ThreadTraceData>(
                         x => x.Opcode == Diagnostics.Tracing.TraceEventOpcode.Stop);
-
                 var jitVisitor = new GetFirstMatchingEventVisitor<PARSERS.Clr.MethodLoadUnloadVerboseTraceData>();
-
                 var timeToMainVisitor = new GetFirstMatchingEventVisitor<TRACING.TraceEvent>(ev => { return ev.ProviderName == "aspnet-JitBench-MusicStore" && ev.EventName == "ProgramStarted"; } );
                 var timeToServerStartedVisitor = new GetFirstMatchingEventVisitor<TRACING.TraceEvent>((TRACING.TraceEvent ev) => { return ev.ProviderName == "aspnet-JitBench-MusicStore" && ev.EventName == "ServerStarted"; });
                 var timeToFirstRequestVisitor = new GetFirstMatchingEventVisitor<TRACING.TraceEvent>((TRACING.TraceEvent ev) => { return ev.ProviderName == "aspnet-JitBench-MusicStore" && ev.EventName == "RequestBatchServed"; });
@@ -70,8 +68,17 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                 Controller.RunVisitorForResult(timeToServerStartedVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(timeToFirstRequestVisitor, data.GetThreadTimeline(threadId));
 
-                System.Diagnostics.Debug.Assert(startVisitor.State == EventVisitor<PARSERS.Kernel.ThreadTraceData>.VisitorState.Done &&
-                    stopVisitor.State == EventVisitor<PARSERS.Kernel.ThreadTraceData>.VisitorState.Done);
+                IsInErrorState |= startVisitor.State != EventVisitor<PARSERS.Kernel.ThreadTraceData>.VisitorState.Done
+                    || stopVisitor.State != EventVisitor<PARSERS.Kernel.ThreadTraceData>.VisitorState.Done
+                    || jitVisitor.State == EventVisitor<PARSERS.Clr.MethodLoadUnloadVerboseTraceData>.VisitorState.Error
+                    || timeToMainVisitor.State == EventVisitor<TRACING.TraceEvent>.VisitorState.Error
+                    || timeToServerStartedVisitor.State == EventVisitor<TRACING.TraceEvent>.VisitorState.Error
+                    || timeToFirstRequestVisitor.State == EventVisitor<TRACING.TraceEvent>.VisitorState.Error;
+
+                if (IsInErrorState)
+                {
+                    break;
+                }
 
                 var methodUniqueId = (jitVisitor.Result == null) ? null : new MethodUniqueIdentifier(jitVisitor.Result);
 
@@ -97,8 +104,13 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             return this;
         }
 
-        public void Persist(string folderPath)
+        public bool Persist(string folderPath)
         {
+            if (IsInErrorState)
+            {
+                return false;
+            }
+
             using (var writer = new ReportWriters.PlainTextWriter(System.IO.Path.Combine(folderPath, Name)))
             {
                 writer.WriteTitle("Process data");
@@ -129,6 +141,8 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                     writer.RemoveIndentationLevel();
                 }
             }
+
+            return true;
         }
     }
 }

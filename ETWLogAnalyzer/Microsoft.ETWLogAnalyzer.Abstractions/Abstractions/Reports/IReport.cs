@@ -3,9 +3,10 @@
     public interface IReport 
     {
         string Name { get; }
+        bool IsInErrorState { get; }
         
         IReport Analyze(IEventModel data);
 
-       void Persist(string folderPath);
+        bool Persist(string folderPath);
     }
 }
