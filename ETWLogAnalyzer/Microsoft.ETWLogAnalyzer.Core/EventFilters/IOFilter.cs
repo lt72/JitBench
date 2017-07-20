@@ -8,6 +8,9 @@ using Microsoft.ETWLogAnalyzer.Abstractions;
 
 namespace Microsoft.ETWLogAnalyzer.EventFilters
 {
+    /// <summary>
+    /// Filter for I/O events.
+    /// </summary>
     public class IOFilter : IEventFilter
     {
         private int _pidUnderTest;
@@ -19,6 +22,15 @@ namespace Microsoft.ETWLogAnalyzer.EventFilters
             _IRPToThread = new Dictionary<UInt64, int>();
         }
 
+        /// <summary>
+        /// I/O events some times are completed in another thread, so they must be matched by the IRP 
+        /// back to the thread that initiated the request. This filter chaches the information and returns
+        /// if it's relevant.
+        /// </summary>
+        /// <param name="ev"> I/O event </param>
+        /// <param name="relevantThreadList"> Threads that initiated the I/O </param>
+        /// <exception cref=""> Event is not I/O reading events end up in argument invalid exceptions. </exception>
+        /// <returns> True if the I/O belongs </returns>
         public bool IsRelevant(TRACING.TraceEvent ev, out List<int> relevantThreadList)
         {
             if (ev is PARSERS.Kernel.DiskIOInitTraceData ioStartEv)
@@ -46,10 +58,7 @@ namespace Microsoft.ETWLogAnalyzer.EventFilters
                 return ioFinishEv.ProcessID == _pidUnderTest;
             }
 
-            // This means we passed a non io event to this filter...
-            relevantThreadList = null;
-            Debug.Assert(false);
-            return false;
+            throw new ArgumentException($"Event {ev} is not an I/O event.");
         }
     }
 }

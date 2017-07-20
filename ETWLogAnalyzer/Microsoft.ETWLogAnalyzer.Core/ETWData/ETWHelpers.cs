@@ -9,6 +9,10 @@ using System.Diagnostics;
 
 namespace Microsoft.ETWLogAnalyzer.Framework.Helpers
 {
+    /// <summary>
+    /// Holder for events. The only purpose is to sanitize and classify data so that it can be used
+    /// to instantiate an ETWData object.
+    /// </summary>
     public class ETWEventsHolder
     {
         /// <summary>
@@ -27,11 +31,20 @@ namespace Microsoft.ETWLogAnalyzer.Framework.Helpers
         /// Set of filters that can be used to determine if an event is relevant to the thread.
         /// </summary>
         private readonly Dictionary<Type, IEventFilter> _filters;
-
+        /// <summary>
+        /// Overall event timeline.
+        /// </summary>
         internal SortedList<double, TRACING.TraceEvent> EventSchedule { get => _events; }
-
+        /// <summary>
+        /// Event schedule by thread sorted by time.
+        /// </summary>
         internal Dictionary<int, SortedList<double, TRACING.TraceEvent>> ThreadSchedule { get => _threadSchedule; }
 
+        /// <summary>
+        /// Initializes the fields and sets IEventFilters based on the event's type to correctly classify it into the 
+        /// right thread timelines.
+        /// </summary>
+        /// <param name="pid"> PID of the process to trace </param>
         public ETWEventsHolder(int pid)
         {
             _pidUnderTest = pid;
@@ -88,7 +101,11 @@ namespace Microsoft.ETWLogAnalyzer.Framework.Helpers
         }
 
         // Helpers
-
+        /// <summary>
+        /// Gets a thread timeline, or creates it if it doesn't exist yet.
+        /// </summary>
+        /// <param name="relevantThread"> Thread ID of the timeline needed. </param>
+        /// <returns> Timeline as a sorted list of events. </returns>
         private SortedList<double, TRACING.TraceEvent> GetThreadTimeline(int relevantThread)
         {
             if (!_threadSchedule.TryGetValue(relevantThread, out SortedList<double, TRACING.TraceEvent> relevantThreadTimeline))
@@ -104,8 +121,8 @@ namespace Microsoft.ETWLogAnalyzer.Framework.Helpers
         /// Adds event in the next empty nanosecond. As it's extremely unlikely that this happens,
         /// this is a plausible approach. 
         /// </summary>
-        /// <param name="eventList"></param>
-        /// <param name=""></param>
+        /// <param name="eventList"> List to add the event to. </param>
+        /// <param name="ev"> Event to add. </param>
         private void AddUniqueTime(SortedList<double, TRACING.TraceEvent> eventList, TRACING.TraceEvent ev)
         {
             Debug.Assert(eventList != null);

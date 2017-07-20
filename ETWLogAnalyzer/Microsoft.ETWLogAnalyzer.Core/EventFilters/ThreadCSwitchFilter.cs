@@ -5,6 +5,9 @@ using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 
 namespace Microsoft.ETWLogAnalyzer.EventFilters
 {
+    /// <summary>
+    /// Classifies the process's context switches into both the leaving thread and the entering thread as necessary.
+    /// </summary>
     public class ThreadCSwitchFilter : IEventFilter
     {
         private int _pid;

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.ETWLogAnalyzer.Abstractions;
 
 using TRACING = Microsoft.Diagnostics.Tracing;
@@ -9,38 +8,80 @@ using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 
 namespace Microsoft.ETWLogAnalyzer.Framework
 {
+    /// <summary>
+    /// Data model for JIT performance analysis.
+    /// </summary>
     public sealed class ETWData  : IEventModel
     {
-        private ProcessTraceData _processStart;
-        
-        private ProcessTraceData _processStop;
-
         private readonly Dictionary<int, SortedList<double, TRACING.TraceEvent>> _threadSchedule;
-
         private readonly SortedList<double, TRACING.TraceEvent> _overallEvents;
-
         private readonly Dictionary<MethodUniqueIdentifier, int> _methodToThreadMap;
+        public int TestTarget { get => ProcessStart.ProcessID; }
+        public double TimeBase { get => ProcessStart.TimeStampRelativeMSec; }
+        public ProcessTraceData ProcessStart { get; private set; }
+        public ProcessTraceData ProcessStop { get; private set; }
 
         /// <summary>
-        /// For serialization purposes only...
+        /// For serialization purposes only.
         /// </summary>
         private ETWData()
         { }
 
         /// <summary>
-        /// Data holder for performance metrics querying
+        /// Constructor for ETWData.
         /// </summary>
-        /// <param name="data"> ProcessTraceData for the event under examination </param>
-        /// <param name="events"> ETWEventsHolder with the handled events </param>
-        public ETWData(PARSERS.Kernel.ProcessTraceData procStart, PARSERS.Kernel.ProcessTraceData procStop, Helpers.ETWEventsHolder events)
+        /// <param name="procStart"> Process start event </param>
+        /// <param name="procStop"> Process stop event </param>
+        /// <param name="events"> ETWEventsHold holding the classified data by thread. </param>
+        public ETWData(ProcessTraceData procStart, PARSERS.Kernel.ProcessTraceData procStop, Helpers.ETWEventsHolder events)
         {
-            _processStart = procStart;
-            _processStop = procStop;
+            ProcessStart = procStart;
+            ProcessStop = procStop;
             _threadSchedule = events.ThreadSchedule;
             _overallEvents = events.EventSchedule;
             _methodToThreadMap = GetMethodToThreadCache();
         }
 
+        /// <summary>
+        /// Returns true if the process jitted a method with the given identifier, false otherwise
+        /// </summary>
+        /// <param name="methodUniqueIdentifier"> identifier for method </param>
+        /// <param name="threadId"> int identifier of the jitting thread </param>
+        /// <returns> True if method jitted by the process under examination, false otherwise </returns>
+        public bool GetJittingThreadForMethod(MethodUniqueIdentifier methodUniqueIdentifier, out int threadId)
+        {
+            return _methodToThreadMap.TryGetValue(methodUniqueIdentifier, out threadId);
+        }
+
+        /// <summary>
+        /// Retrieve a IEnumerable of methods jitted by the process.
+        /// </summary>
+        public IEnumerable<MethodUniqueIdentifier> JittedMethodsList => _methodToThreadMap.Keys;
+
+        /// <summary>
+        /// Retrieve a list of threads used by the process.
+        /// </summary>
+        public IEnumerable<int> ThreadList => _threadSchedule.Keys;
+
+        /// <summary>
+        /// Gets an IEnumerator to a given thread's timeline, or throws ArgumentException if the thread isn't used by the process.
+        /// </summary>
+        /// <param name="threadId"> Thread ID of the thread to get the event timeline for. </param>
+        /// <returns> IEnumerator of the thread's timeline </returns>
+        public IEnumerator<TRACING.TraceEvent> GetThreadTimeline(int threadId)
+        {
+            if (!_threadSchedule.TryGetValue(threadId, out var threadTimeline))
+            {
+                throw new ArgumentException($"Process {TestTarget} didn't use thread {threadId}.");
+            }
+
+            return threadTimeline.Values.GetEnumerator();
+        }
+
+        /// <summary>
+        /// Generates a cache of the jitting thread for each method.
+        /// </summary>
+        /// <returns> Dictionary that maps method identifiers to thread id's </returns>
         private Dictionary<MethodUniqueIdentifier, int> GetMethodToThreadCache()
         {
             var methodToThreadCache = new Dictionary<MethodUniqueIdentifier, int>();
@@ -62,48 +103,6 @@ namespace Microsoft.ETWLogAnalyzer.Framework
                 }
             }
             return methodToThreadCache;
-        }
-
-
-        public int TestTarget { get => _processStart.ProcessID; }
-
-        public double TimeBase { get => _processStart.TimeStampRelativeMSec; }
-
-        public ProcessTraceData ProcessStart { get => _processStart; }
-
-        public ProcessTraceData ProcessStop { get => _processStop; }
-
-        /// <summary>
-        /// Returns true if the process jitted a method with the given (ID, name) tuple, false otherwise
-        /// </summary>
-        /// <param name="methodUniqueIdentifier"> (identifier, fully quallified name) pair for method </param>
-        /// <param name="threadId"> int identifier of the jitting thread </param>
-        /// <returns> true if method jitted by process </returns>
-        public bool GetJittingThreadForMethod(MethodUniqueIdentifier methodUniqueIdentifier, out int threadId)
-        {
-            return _methodToThreadMap.TryGetValue(methodUniqueIdentifier, out threadId);
-        }
-
-        /// <summary>
-        /// Retrieve a list of methods jitted by the process.
-        /// </summary>
-        /// <returns> list of(identifier, fully quallified name) pair for methods jitted</returns>
-        public List<MethodUniqueIdentifier> JittedMethodsList => _methodToThreadMap.Keys.ToList();
-
-        /// <summary>
-        /// Retrieve a list of threads used by the process.
-        /// </summary>
-        /// <returns> list of threads used by the process </returns>
-        public List<int> ThreadList => _threadSchedule.Keys.ToList();
-
-        public IEnumerator<TRACING.TraceEvent> GetThreadTimeline(int threadId)
-        {
-            if (!_threadSchedule.TryGetValue(threadId, out var threadTimeline))
-            {
-                throw new ArgumentException($"Process {TestTarget} didn't use thread {threadId}.");
-            }
-
-            return threadTimeline.Values.GetEnumerator();
         }
     }
 }
