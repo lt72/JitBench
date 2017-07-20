@@ -2,13 +2,16 @@
 using System.Collections.Generic;
 using Microsoft.ETWLogAnalyzer.Abstractions;
 using Microsoft.ETWLogAnalyzer.ReportVisitors;
-using Microsoft.ETWLogAnalyzer.ReportWriters;
 using Microsoft.ETWLogAnalyzer.Framework;
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 
 namespace Microsoft.ETWLogAnalyzer.Reports
 {
+    /// <summary>
+    /// Report that sumarizes time taken by each thread and the process itself as well as the time taken to main, server started,
+    /// and first request served.
+    /// </summary>
     public class LifetimeStatistics : IReport
     {
         private struct ThreadLifeInfo
@@ -35,15 +38,13 @@ namespace Microsoft.ETWLogAnalyzer.Reports
         private int _pid;
         private Dictionary<int, ThreadLifeInfo> _threadInfoTable;
         public string Name => "lifetime_stats.txt";
-        public bool IsInErrorState { get; private set; }
 
         public LifetimeStatistics()
         {
             _threadInfoTable = new Dictionary<int, ThreadLifeInfo>();
-            IsInErrorState = false;
         }
 
-        public IReport Analyze(IEventModel data)
+        public bool Analyze(IEventModel data)
         {
             _processStartTime = data.ProcessStart.TimeStampRelativeMSec;
             _processEndTime = data.ProcessStop.TimeStampRelativeMSec;
@@ -68,16 +69,14 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                 Controller.RunVisitorForResult(timeToServerStartedVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(timeToFirstRequestVisitor, data.GetThreadTimeline(threadId));
 
-                IsInErrorState |= startVisitor.State != EventVisitor<PARSERS.Kernel.ThreadTraceData>.VisitorState.Done
-                    || stopVisitor.State != EventVisitor<PARSERS.Kernel.ThreadTraceData>.VisitorState.Done
-                    || jitVisitor.State == EventVisitor<PARSERS.Clr.MethodLoadUnloadVerboseTraceData>.VisitorState.Error
-                    || timeToMainVisitor.State == EventVisitor<TRACING.TraceEvent>.VisitorState.Error
-                    || timeToServerStartedVisitor.State == EventVisitor<TRACING.TraceEvent>.VisitorState.Error
-                    || timeToFirstRequestVisitor.State == EventVisitor<TRACING.TraceEvent>.VisitorState.Error;
-
-                if (IsInErrorState)
+                if (startVisitor.State != VisitorState.Done
+                    || stopVisitor.State != VisitorState.Done
+                    || jitVisitor.State == VisitorState.Error
+                    || timeToMainVisitor.State == VisitorState.Error
+                    || timeToServerStartedVisitor.State == VisitorState.Error
+                    || timeToFirstRequestVisitor.State == VisitorState.Error)
                 {
-                    break;
+                    return false;
                 }
 
                 var methodUniqueId = (jitVisitor.Result == null) ? null : new MethodUniqueIdentifier(jitVisitor.Result);
@@ -101,16 +100,11 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                     _timeToFirstRequest = timeToFirstRequestVisitor.Result.TimeStampRelativeMSec - _processStartTime;
                 }
             }
-            return this;
+            return true;
         }
 
         public bool Persist(string folderPath)
         {
-            if (IsInErrorState)
-            {
-                return false;
-            }
-
             using (var writer = new ReportWriters.PlainTextWriter(System.IO.Path.Combine(folderPath, Name)))
             {
                 writer.WriteTitle("Process data");

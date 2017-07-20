@@ -29,7 +29,7 @@ namespace Microsoft.ETWLogAnalyzer.Abstractions
         /// Property to access the Result of the visitor. If the State is Error, the result can not be verified and 
         /// might represent only a random value or a partial result.
         /// </summary>
-        public virtual R Result { get; protected set; }
+        public R Result { get; protected set; }
         /// <summary>
         /// Gives the default value of the result for comparison.
         /// </summary>

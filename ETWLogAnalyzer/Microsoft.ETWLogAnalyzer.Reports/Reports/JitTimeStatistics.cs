@@ -11,6 +11,10 @@ using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 
 namespace Microsoft.ETWLogAnalyzer.Reports
 {
+    /// <summary>
+    /// This report sumarizes how much time of the perceived time for jitting is used for jitting actually
+    /// as well as an analysis of hard memory faults and context switches during jitting events.
+    /// </summary>
     public class JitTimeStatistics : IReport
     {
         private class JitTimeInfo
@@ -34,7 +38,6 @@ namespace Microsoft.ETWLogAnalyzer.Reports
         private Dictionary<MethodUniqueIdentifier, long> _contextSwitchesPerMethod;
         private Dictionary<MethodUniqueIdentifier, long> _hardFaultsPerMethod;
         public string Name => "jit_time_stats.txt";
-        public bool IsInErrorState { get; private set; }
 
         public JitTimeStatistics()
         {
@@ -44,10 +47,9 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             _hardFaultsPerThread = new Dictionary<int, long>( );
             _contextSwitchesPerMethod = new Dictionary<MethodUniqueIdentifier, long>( );
             _hardFaultsPerMethod = new Dictionary<MethodUniqueIdentifier, long>( );
-            IsInErrorState = false;
         }
 
-        public IReport Analyze(IEventModel data)
+        public bool Analyze(IEventModel data)
         {
             foreach (int threadId in data.ThreadList)
             {
@@ -67,25 +69,20 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                 Controller.RunVisitorForResult(contextSwitchesPerMethodVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(hardFaultsPerMethodVisitor, data.GetThreadTimeline(threadId));
 
-                IsInErrorState |= jitTimeVisitor.State == EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error
-                    || perceivedJitTimeVisitor.State == EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error
-                    || jitMethodVisitor.State == EventVisitor<PARSERS.Clr.MethodLoadUnloadVerboseTraceData>.VisitorState.Error
-                    || contextSwitchesPerMethodVisitor.State == EventVisitor<Dictionary<MethodUniqueIdentifier, long>>.VisitorState.Error
-                    || contextSwitchesPerThreadVisitor.State == EventVisitor<long>.VisitorState.Error
-                    || hardFaultsPerMethodVisitor.State == EventVisitor<Dictionary<MethodUniqueIdentifier, long>>.VisitorState.Error
-                    || hardFaultsPerThreadVisitor.State == EventVisitor<long>.VisitorState.Error;
-
-                if (IsInErrorState)
+                if (jitTimeVisitor.State == VisitorState.Error
+                    || perceivedJitTimeVisitor.State ==VisitorState.Error
+                    || jitMethodVisitor.State == VisitorState.Error
+                    || contextSwitchesPerMethodVisitor.State == VisitorState.Error
+                    || contextSwitchesPerThreadVisitor.State == VisitorState.Error
+                    || hardFaultsPerMethodVisitor.State == VisitorState.Error
+                    || hardFaultsPerThreadVisitor.State == VisitorState.Error)
                 {
-                    break;
+                    return false;
                 }
 
-                _methodJitStatsPerThread.Add(threadId, ZipResults(jitTimeVisitor.Result, perceivedJitTimeVisitor.Result));
-
                 var methodUniqueId = (jitMethodVisitor.Result == null) ? null : new MethodUniqueIdentifier(jitMethodVisitor.Result);
-
+                _methodJitStatsPerThread.Add(threadId, ZipResults(jitTimeVisitor.Result, perceivedJitTimeVisitor.Result));
                 _firstMethodJitted.Add(threadId, methodUniqueId);
-
                 _contextSwitchesPerThread.Add(threadId, contextSwitchesPerThreadVisitor.Result);
                 _hardFaultsPerThread.Add(threadId, hardFaultsPerThreadVisitor.Result);
 
@@ -93,21 +90,17 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                 {
                     _contextSwitchesPerMethod.Add(item.Key, item.Value);
                 }
+
                 foreach (var item in hardFaultsPerMethodVisitor.Result)
                 {
                     _hardFaultsPerMethod.Add(item.Key, item.Value);
                 }
             }
-            return this;
+            return true;
         }
 
         public bool Persist(string folderPath)
         {
-            if (IsInErrorState)
-            {
-                return false;
-            }
-
             using (var writer = new PlainTextWriter(System.IO.Path.Combine(folderPath, Name)))
             {
                 writer.WriteTitle("Jit time statistics per thread");
@@ -166,8 +159,11 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             return true;
         }
 
-        // Helpers
-
+        /// <summary>
+        /// Accumulates times per method
+        /// </summary>
+        /// <param name="threadMethodJitTimes"></param>
+        /// <returns></returns>
         private JitTimeInfo AccumulateMethodTimes(Dictionary<MethodUniqueIdentifier, JitTimeInfo> threadMethodJitTimes)
         {
             double threadJitTime = threadMethodJitTimes.Values.Aggregate(0.0, (accumulator, value) => accumulator + value.JitTimeUsed);
@@ -175,6 +171,10 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             return new JitTimeInfo(threadJitTime, threadPerceivdJitTime);
         }
         
+        /// <summary>
+        /// Aggregates results into helpe
+        /// </summary>
+        /// <returns> Dictiounary of aggregate structures mapped by method. </returns>
         private Dictionary<MethodUniqueIdentifier, JitTimeInfo> ZipResults(
             Dictionary<MethodUniqueIdentifier, double> jitTimeUsedPerMethod,
             Dictionary<MethodUniqueIdentifier, double> perceivedJitTimesPerMethod)

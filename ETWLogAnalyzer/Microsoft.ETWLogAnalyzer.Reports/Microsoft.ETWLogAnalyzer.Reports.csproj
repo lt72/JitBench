@@ -57,8 +57,8 @@
     <Compile Include="Reports\LifetimeStatistics.cs" />
     <Compile Include="Reports\QuantumUsageStatistics.cs" />
     <Compile Include="ReportVisitors\AvailableQuantumAccumulatorVisitor.cs" />
-    <Compile Include="ReportVisitors\CountEventsBetweenAllEventsPairVisitor.cs" />
-    <Compile Include="ReportVisitors\CountEventsBetweenEventsPairVisitor.cs" />
+    <Compile Include="ReportVisitors\GetCountEventsBetweenAllStartStopEventsPairVisitor.cs" />
+    <Compile Include="ReportVisitors\GetCountEventsBetweenStartStopEventsPairVisitor.cs" />
     <Compile Include="ReportVisitors\GetFirstMatchingEventVisitor.cs" />
     <Compile Include="ReportVisitors\JitTimeAccumulatorVisitor.cs" />
     <Compile Include="ReportVisitors\PerceivedJitTimeVisitor.cs" />

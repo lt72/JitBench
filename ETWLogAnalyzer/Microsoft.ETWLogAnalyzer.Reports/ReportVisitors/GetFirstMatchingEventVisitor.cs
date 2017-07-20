@@ -15,6 +15,7 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
         {
             _matchingCondition = condition ?? DefaultTrue;
             Result = null;
+
             AddRelevantTypes(new List<Type> { typeof(R) });
         }
 

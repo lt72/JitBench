@@ -7,49 +7,51 @@ using System.Diagnostics;
 
 namespace Microsoft.ETWLogAnalyzer.ReportVisitors
 {
-    public class GetCountEventsBetweenStartStopEventsPairVisitor<S,E,T> : EventVisitor<long>
+    public class GetCountEventsBetweenAllStartStopEventsPairVisitor<S,E,T,K> : EventVisitor<Dictionary<K,long>>
         where S : TRACING.TraceEvent
         where E : TRACING.TraceEvent
+        where K : IConstructable<K, E>, new()
     {
         private bool _active;
-        private bool _done;
+        private long _curCount;
         private readonly bool _checkOpcode;
 
-        public GetCountEventsBetweenStartStopEventsPairVisitor(bool checkOpcode) : base()
+        public GetCountEventsBetweenAllStartStopEventsPairVisitor(bool checkOpcode) : base()
         {
             _active = false;
-            _done = false;
             _checkOpcode = checkOpcode;
+            Result = new Dictionary<K, long>();
 
             AddRelevantTypes(new List<Type> { typeof(T), typeof(S), typeof(E) });
-
-            Result = 0;
         }
 
         public override void Visit(TRACING.TraceEvent ev)
         {
-            if(_done)
-            {
-                return;
-            }
-
             if (_active == false && ev.GetType() != typeof(S))
             {
                 return;
             }
 
+            if (ev.GetType() == typeof(S))
+            {
+                if (MarksStart(ev))
+                {
+                    _curCount = 0;
+                }
+            }
+
             //
-            // if start events are nested, reset the total count.
+            // if started events are nested, reset the total count.
             //
             if(_active == true && ev.GetType() == typeof(S))
             {
                 if (MarksStart(ev))
                 {
-                    Result = 0;
+                    _curCount = 0;
                 }
             }
 
-            if (ev.GetType() == typeof(S))
+            if (_active == false && ev.GetType() == typeof(S))
             {
                 if (MarksStart(ev))
                 {
@@ -59,14 +61,15 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
 
             if (ev.GetType() == typeof(T))
             {
-                Result += 1;
+                _curCount += 1;
             }
 
-            if (ev.GetType() == typeof(E))
+            if (ev is E evAsE)
             {
                 if (MarksStop(ev))
                 {
-                    _done = true;
+                    _active = false;
+                    Result.Add(new K().Create(evAsE), _curCount);
                 }
             }
         }

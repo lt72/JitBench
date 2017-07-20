@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using Microsoft.ETWLogAnalyzer.ReportWriters;
 using Microsoft.ETWLogAnalyzer.Abstractions;
 using Microsoft.ETWLogAnalyzer.ReportVisitors;
 using Microsoft.ETWLogAnalyzer.Framework;
@@ -11,6 +9,9 @@ using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 
 namespace Microsoft.ETWLogAnalyzer.Reports
 {
+    /// <summary>
+    /// Report that analyzes how much of the scheduler quantums/time slices the different threads/methods are using.
+    /// </summary>
     public class QuantumUsageStatistics : IReport
     {
         private class QuantumTimeInfo
@@ -34,7 +35,6 @@ namespace Microsoft.ETWLogAnalyzer.Reports
         private Dictionary<MethodUniqueIdentifier, long> _contextSwitchesPerMethod;
         private Dictionary<MethodUniqueIdentifier, long> _hardFaultsPerMethod;
         public string Name => "quantum_usage_stats.txt";
-        public bool IsInErrorState { get; private set; }
 
         public QuantumUsageStatistics()
         {
@@ -44,10 +44,9 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             _hardFaultsPerThread = new Dictionary<int, long>();
             _contextSwitchesPerMethod = new Dictionary<MethodUniqueIdentifier, long>();
             _hardFaultsPerMethod = new Dictionary<MethodUniqueIdentifier, long>();
-            IsInErrorState = false;
         }
 
-        public IReport Analyze(IEventModel data)
+        public bool Analyze(IEventModel data)
         {
             foreach (int threadId in data.ThreadList)
             {
@@ -67,17 +66,15 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                 Controller.RunVisitorForResult(contextSwitchesPerMethodVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(hardFaultsPerMethodVisitor, data.GetThreadTimeline(threadId));
 
-                IsInErrorState |= jitTimeVisitor.State == EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error
-                    || availableQuantumTimeVisitor.State == EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error
-                    || jitMethodVisitor.State == EventVisitor<PARSERS.Clr.MethodLoadUnloadVerboseTraceData>.VisitorState.Error
-                    || contextSwitchesPerMethodVisitor.State == EventVisitor<Dictionary<MethodUniqueIdentifier, long>>.VisitorState.Error
-                    || hardFaultsPerMethodVisitor.State == EventVisitor<Dictionary<MethodUniqueIdentifier, long>>.VisitorState.Error
-                    || hardFaultsPerThreadVisitor.State == EventVisitor<long>.VisitorState.Error
-                    || contextSwitchesPerThreadVisitor.State == EventVisitor<long>.VisitorState.Error;
-
-                if (IsInErrorState)
+                if (jitTimeVisitor.State == VisitorState.Error
+                    || availableQuantumTimeVisitor.State == VisitorState.Error
+                    || jitMethodVisitor.State == VisitorState.Error
+                    || contextSwitchesPerMethodVisitor.State == VisitorState.Error
+                    || hardFaultsPerMethodVisitor.State == VisitorState.Error
+                    || hardFaultsPerThreadVisitor.State == VisitorState.Error
+                    || contextSwitchesPerThreadVisitor.State == VisitorState.Error)
                 {
-                    break;
+                    return false;
                 }
 
                 _methodJistStatsPerThread.Add(threadId,
@@ -98,16 +95,11 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                     _hardFaultsPerMethod.Add(item.Key, item.Value);
                 }
             }
-            return this;
+            return true;
         }
 
         public bool Persist(string folderPath)
         {
-            if (IsInErrorState)
-            {
-                return false;
-            }
-
             using (var writer = new ReportWriters.PlainTextWriter(System.IO.Path.Combine(folderPath, Name)))
             {
                 writer.WriteTitle("Thread Usage with Respect to Jitting");
@@ -165,8 +157,10 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             return true;
         }
 
-        // Helpers
-
+        /// <summary>
+        /// Helper to accumulate times of methods into a single structure.
+        /// </summary>
+        /// <returns> Accumulated times in a QuantumTimeInfo structure. </returns>
         private QuantumTimeInfo AccumulateMethodTimes(Dictionary<MethodUniqueIdentifier, QuantumTimeInfo> threadMethodJitTimes)
         {
             double threadJitTime = threadMethodJitTimes.Values.Aggregate(0.0, (accumulator, value) => accumulator + value.JitTimeUsed);
@@ -174,6 +168,9 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             return new QuantumTimeInfo(threadJitTime, threadQuantumJitTime);
         }
 
+        /// <summary>
+        /// Aggregates different results per method in a helper structure.
+        /// </summary>
         private Dictionary<MethodUniqueIdentifier, QuantumTimeInfo> ZipResults(
             Dictionary<MethodUniqueIdentifier, double> jitTimeUsedPerMethod,
             Dictionary<MethodUniqueIdentifier, double> availableJitTimePerMethod)

@@ -8,6 +8,10 @@ using Microsoft.ETWLogAnalyzer.Framework;
 
 namespace Microsoft.ETWLogAnalyzer.Reports
 {
+    /// <summary>
+    /// This report analyzes how nominal JIT time gets split into I/O time, non-I/O unscheduled time, idle time, Jitting time
+    /// for each thread and for each method of the process.
+    /// </summary>
     public class IOTimeUsageStatistics : IReport
     {
         private class TimeAllocationInfo
@@ -31,15 +35,13 @@ namespace Microsoft.ETWLogAnalyzer.Reports
         private static readonly string FormatString = "{0, -35}:\t{1:F2}";
         private Dictionary<int, Dictionary<MethodUniqueIdentifier, TimeAllocationInfo>> _methodUnscheduledTimeStats;
         public string Name => "io_time_usage_stats.txt";
-        public bool IsInErrorState { get; private set; }
 
         public IOTimeUsageStatistics()
         {
             _methodUnscheduledTimeStats = new Dictionary<int, Dictionary<MethodUniqueIdentifier, TimeAllocationInfo>>();
-            IsInErrorState = false;
         }
 
-        public IReport Analyze(IEventModel data)
+        public bool Analyze(IEventModel data)
         {
             foreach (var threadId in data.ThreadList)
             {
@@ -51,29 +53,22 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                 Controller.RunVisitorForResult(perceivedJitTimeVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(unscheduledTimeClassifierVisitor, data.GetThreadTimeline(threadId));
 
-                IsInErrorState |= jitTimeVisitor.State == EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error
-                    || perceivedJitTimeVisitor.State == EventVisitor<Dictionary<MethodUniqueIdentifier, double>>.VisitorState.Error
-                    || unscheduledTimeClassifierVisitor.State == EventVisitor<Dictionary<MethodUniqueIdentifier, (double idleTime, double ioTime, double otherUnscheduledTime)>>.VisitorState.Error;
-
-                if (IsInErrorState)
+                if (jitTimeVisitor.State == VisitorState.Error
+                    || perceivedJitTimeVisitor.State == VisitorState.Error
+                    || unscheduledTimeClassifierVisitor.State == VisitorState.Error)
                 {
-                    break;
+                    return false;
                 }
 
                 _methodUnscheduledTimeStats.Add(threadId, CombineResultsByMethod(
                     jitTimeVisitor.Result, perceivedJitTimeVisitor.Result, unscheduledTimeClassifierVisitor.Result));
             }
 
-            return this;
+            return true;
         }
 
         public bool Persist(string folderPath)
         {
-            if (IsInErrorState)
-            {
-                return false;
-            }
-
             using (var writer = new PlainTextWriter(System.IO.Path.Combine(folderPath, Name)))
             {
                 writer.WriteTitle("Jit time allocation statistics per thread");
@@ -103,6 +98,9 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             return true;
         }
 
+        /// <summary>
+        /// Helper function to format write a TimeAllocationInfo
+        /// </summary>
         private void WriteTimeAlloc(TextReportWriter writer, TimeAllocationInfo timeAllocInfo)
         {
             writer.AddIndentationLevel();
@@ -124,6 +122,11 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             writer.RemoveIndentationLevel();
         }
 
+        /// <summary>
+        /// Accumulates per method times to a container.
+        /// </summary>
+        /// <param name="threadsMethodTimeAllocs"> Method to TimeAllocation info map. </param>
+        /// <returns></returns>
         private TimeAllocationInfo AccumulateMethodTimes(Dictionary<MethodUniqueIdentifier, TimeAllocationInfo> threadsMethodTimeAllocs)
         {
             double threadJitTime = threadsMethodTimeAllocs.Values.Aggregate(0.0, (accumulator, value) => accumulator + value.EffectiveJitTime);
@@ -134,6 +137,13 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             return new TimeAllocationInfo(threadPerceivedJitTime, threadJitTime, threadIdleTime, threadIoTime, threadNonIOUnschedTime);
         }
 
+        /// <summary>
+        /// Takes all the different times calculated per method and aggregates them into a helper structure.
+        /// </summary>
+        /// <param name="effectiveJitTimes"></param>
+        /// <param name="nominalJitTimes"></param>
+        /// <param name="unschedulesTimes"></param>
+        /// <returns></returns>
         private Dictionary<MethodUniqueIdentifier, TimeAllocationInfo> CombineResultsByMethod(
             Dictionary<MethodUniqueIdentifier, double> effectiveJitTimes,
             Dictionary<MethodUniqueIdentifier, double> nominalJitTimes,
