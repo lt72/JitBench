@@ -47,7 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Abstractions\Filters\IEventFilter.cs" />
-    <Compile Include="Abstractions\Helpers\MethodUniqueIdentifier.cs" />
+    <Compile Include="Helpers\MethodUniqueIdentifier.cs" />
     <Compile Include="Abstractions\Model\IEventModel.cs" />
     <Compile Include="Abstractions\Reports\IReport.cs" />
     <Compile Include="Abstractions\ReportVisitors\EventVisitorBase.cs" />
