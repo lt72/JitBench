@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using System.Diagnostics;
+using Microsoft.ETWLogAnalyzer.Abstractions;
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.ETWLogAnalyzer.Abstractions;
-using System.Diagnostics;
 
 namespace Microsoft.ETWLogAnalyzer.ReportVisitors
 {
+    /// <summary>
+    /// Calculates the jitting time of a thread by method.
+    /// </summary>
     public class JitTimeAccumulatorVisitor : EventVisitor<Dictionary<MethodUniqueIdentifier, double>>
     {
         private enum InternalState { Ready, JitRunning, JitFinished };
@@ -25,16 +27,15 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
 
         public JitTimeAccumulatorVisitor(int threadId) : base()
         {
+            Result = new Dictionary<MethodUniqueIdentifier, double>();
             _internalState = InternalState.Ready;
             _lastStart = 0;
-            Result = new Dictionary<MethodUniqueIdentifier, double>();
             _threadId = threadId;
             AddRelevantTypes(RelevantTypes);
         }
 
         public override void Visit(TRACING.TraceEvent ev)
         {
-            State = VisitorState.Continue;
             if (ev is PARSERS.Clr.MethodJittingStartedTraceData jitStartEv)
             {
                 _internalState = InternalState.JitRunning;
@@ -55,9 +56,9 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
             }
             else if (ev is PARSERS.Clr.MethodLoadUnloadVerboseTraceData jitEndEv)
             {
-                Debug.Assert(jitEndEv.MethodID == _methodJitting.MethodID);
-                if (_internalState != InternalState.JitRunning)
+                if (_internalState != InternalState.JitRunning || jitEndEv.MethodID == _methodJitting.MethodID)
                 {
+                    Debug.Assert(false, "Method jitted doesn't match with the event start.");
                     State = VisitorState.Error;
                     return;
                 }

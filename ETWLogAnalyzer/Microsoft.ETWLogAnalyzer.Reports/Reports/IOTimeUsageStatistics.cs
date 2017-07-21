@@ -125,7 +125,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
         /// <summary>
         /// Accumulates per method times to a container.
         /// </summary>
-        /// <param name="threadsMethodTimeAllocs"> Method to TimeAllocation info map. </param>
+        /// <param name="threadsMethodTimeAllocs"> Method to TimeAllocationInfo map. </param>
         /// <returns></returns>
         private TimeAllocationInfo AccumulateMethodTimes(Dictionary<MethodUniqueIdentifier, TimeAllocationInfo> threadsMethodTimeAllocs)
         {
@@ -140,10 +140,6 @@ namespace Microsoft.ETWLogAnalyzer.Reports
         /// <summary>
         /// Takes all the different times calculated per method and aggregates them into a helper structure.
         /// </summary>
-        /// <param name="effectiveJitTimes"></param>
-        /// <param name="nominalJitTimes"></param>
-        /// <param name="unschedulesTimes"></param>
-        /// <returns></returns>
         private Dictionary<MethodUniqueIdentifier, TimeAllocationInfo> CombineResultsByMethod(
             Dictionary<MethodUniqueIdentifier, double> effectiveJitTimes,
             Dictionary<MethodUniqueIdentifier, double> nominalJitTimes,

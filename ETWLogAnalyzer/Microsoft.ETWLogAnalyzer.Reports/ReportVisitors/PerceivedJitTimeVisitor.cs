@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using Microsoft.ETWLogAnalyzer.Abstractions;
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.ETWLogAnalyzer.Abstractions;
 
 namespace Microsoft.ETWLogAnalyzer.ReportVisitors
 {
+    /// <summary>
+    /// This visitor calculates the time between the JittingStarted event and the Method/LoadVerbose
+    /// events for each method.
+    /// </summary>
     public class PerceivedJitTimeVisitor : EventVisitor<Dictionary<MethodUniqueIdentifier, double>>
     {
         private static readonly List<Type> RelevantTypes = new List<Type> {
@@ -18,9 +21,9 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
         
         public PerceivedJitTimeVisitor(int threadId) : base()
         {
-            _threadId = threadId;
             Result = new Dictionary<MethodUniqueIdentifier, double>();
             _methodToJitStart = new Dictionary<long, PARSERS.Clr.MethodJittingStartedTraceData>();
+            _threadId = threadId;
             AddRelevantTypes(RelevantTypes);
         }
 
@@ -34,6 +37,7 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
             {
                 if (!_methodToJitStart.TryGetValue(jitEndEv.MethodID, out var matchJitStart))
                 {
+                    System.Diagnostics.Debug.Assert(false, "Unmatched LoadVerbose event found on thread.");
                     State = VisitorState.Error;
                     return;
                 }

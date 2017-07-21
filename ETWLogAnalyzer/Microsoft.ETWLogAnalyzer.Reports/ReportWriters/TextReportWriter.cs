@@ -3,6 +3,9 @@ using System.IO;
 
 namespace Microsoft.ETWLogAnalyzer.ReportWriters
 {
+    /// <summary>
+    /// Formatted text based report writer 
+    /// </summary>
     internal class TextReportWriter : IDisposable
     {
         private readonly TextWriter _stream;

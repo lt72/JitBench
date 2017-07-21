@@ -1,20 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using System.Diagnostics;
+using Microsoft.ETWLogAnalyzer.Abstractions;
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.ETWLogAnalyzer.Abstractions;
-using System.Diagnostics;
 
 namespace Microsoft.ETWLogAnalyzer.ReportVisitors
 {
+    /// <summary>
+    /// This visitor calculates the available time for jitting as described by the documentation.
+    /// </summary>
     public class AvailableQuantumAccumulatorVisitor : EventVisitor<Dictionary<MethodUniqueIdentifier, double>>
     {
+        /// <summary>
+        /// Different states that the visitor will find itself in as it receives events.
+        /// </summary>
         private enum InternalState { Ready, JitRunning, JitFinished };
         private static readonly List<Type> RelevantTypes = new List<Type> {
             typeof(PARSERS.Clr.MethodJittingStartedTraceData),
             typeof(PARSERS.Kernel.CSwitchTraceData),
             typeof(PARSERS.Clr.MethodLoadUnloadVerboseTraceData) };
+        // TODO: Research call to get this dynamically. https://aka.ms/perf_blog might be useful. Issue #23
         private static readonly double QuantumLength = 20;
 
         private InternalState _internalState;
@@ -52,8 +58,7 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
 
                     double wastedQuantum = QuantumLength - (cSwitchEv.TimeStampRelativeMSec - _lastSwitchIn);
                     // Adjust for quantums extended by the system.
-                    wastedQuantum = (wastedQuantum > 0) ? wastedQuantum : 0;
-                    _accumulator += wastedQuantum;
+                    _accumulator += (wastedQuantum > 0) ? wastedQuantum : 0;
                 }
                 else
                 {
@@ -64,9 +69,10 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
             }
             else if (ev is PARSERS.Clr.MethodLoadUnloadVerboseTraceData jitEndEv)
             {
-                Debug.Assert(jitEndEv.MethodID == _methodJitting.MethodID);
-                if (_internalState != InternalState.JitRunning)
+                if (_internalState != InternalState.JitRunning || jitEndEv.MethodID != _methodJitting.MethodID)
                 {
+                    // If we don't have a matching jitting started, we've hit a bug and the code must be revised.
+                    Debug.Assert(false, "Method end doesn't match last seen start");
                     State = VisitorState.Error;
                     return;
                 }
@@ -77,6 +83,7 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
                 _internalState = InternalState.JitFinished;
                 _methodJitting = null;
             }
+            State = VisitorState.Error;
         }
     }
 }

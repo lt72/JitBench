@@ -160,10 +160,8 @@ namespace Microsoft.ETWLogAnalyzer.Reports
         }
 
         /// <summary>
-        /// Accumulates times per method
+        /// Accumulates times per method into a helper structure.
         /// </summary>
-        /// <param name="threadMethodJitTimes"></param>
-        /// <returns></returns>
         private JitTimeInfo AccumulateMethodTimes(Dictionary<MethodUniqueIdentifier, JitTimeInfo> threadMethodJitTimes)
         {
             double threadJitTime = threadMethodJitTimes.Values.Aggregate(0.0, (accumulator, value) => accumulator + value.JitTimeUsed);
@@ -172,7 +170,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
         }
         
         /// <summary>
-        /// Aggregates results into helpe
+        /// Aggregates results into a helper structure.
         /// </summary>
         /// <returns> Dictiounary of aggregate structures mapped by method. </returns>
         private Dictionary<MethodUniqueIdentifier, JitTimeInfo> ZipResults(

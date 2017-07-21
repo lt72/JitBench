@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-
-using TRACING = Microsoft.Diagnostics.Tracing;
 using Microsoft.ETWLogAnalyzer.Abstractions;
+using TRACING = Microsoft.Diagnostics.Tracing;
 
 namespace Microsoft.ETWLogAnalyzer.ReportVisitors
 {
+    /// <summary>
+    /// Visits until the first event that matches the type and the predicate.
+    /// </summary>
+    /// <typeparam name="R"> Type of event to match </typeparam>
     public class GetFirstMatchingEventVisitor<R> : EventVisitor<R> where R : TRACING.TraceEvent 
     {
         private static Predicate<R> DefaultTrue = x => true;
@@ -15,7 +18,6 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
         {
             _matchingCondition = condition ?? DefaultTrue;
             Result = null;
-
             AddRelevantTypes(new List<Type> { typeof(R) });
         }
 

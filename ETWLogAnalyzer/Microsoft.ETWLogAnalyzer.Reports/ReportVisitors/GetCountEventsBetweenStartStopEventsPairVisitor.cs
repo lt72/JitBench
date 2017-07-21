@@ -1,58 +1,47 @@
 ﻿using System;
 using System.Collections.Generic;
-
-using TRACING = Microsoft.Diagnostics.Tracing;
 using Microsoft.ETWLogAnalyzer.Abstractions;
+using TRACING = Microsoft.Diagnostics.Tracing;
 
 namespace Microsoft.ETWLogAnalyzer.ReportVisitors
 {
+    /// <summary>
+    /// Counts the events of a given type that fall within the first window of the start-stop events.
+    /// </summary>
+    /// <typeparam name="S"> Event type that denotes start of the window. </typeparam>
+    /// <typeparam name="E"> Event type that denotes end of the window. Must be different from S by at least the opcode. </typeparam>
+    /// <typeparam name="T"> Type of event to be counted </typeparam>
     public class GetCountEventsBetweenStartStopEventsPairVisitor<S,E,T> : EventVisitor<long>
         where S : TRACING.TraceEvent
         where E : TRACING.TraceEvent
     {
         private bool _active;
-        private bool _done;
         private readonly bool _checkOpcode;
 
         public GetCountEventsBetweenStartStopEventsPairVisitor(bool checkOpcode) : base()
         {
             _active = false;
-            _done = false;
             _checkOpcode = checkOpcode;
             Result = 0;
-
             AddRelevantTypes(new List<Type> { typeof(T), typeof(S), typeof(E) });
         }
 
         public override void Visit(TRACING.TraceEvent ev)
         {
-            if(_done)
+            if(State == VisitorState.Done || (!_active && ev.GetType() != typeof(S)))
             {
+                // Skip if done or if event is not in the window.
                 return;
             }
 
-            if (_active == false && ev.GetType() != typeof(S))
+            if(ev.GetType() == typeof(S) && MarksStart(ev))
             {
-                return;
-            }
-
-            //
-            // if start events are nested, reset the total count.
-            //
-            if(_active == true && ev.GetType() == typeof(S))
-            {
-                if (MarksStart(ev))
+                if (_active)
                 {
+                    // Reset the count if the start events are nested.
                     Result = 0;
                 }
-            }
-
-            if (ev.GetType() == typeof(S))
-            {
-                if (MarksStart(ev))
-                {
-                    _active = true;
-                }
+                _active = true;
             }
 
             if (ev.GetType() == typeof(T))
@@ -60,33 +49,30 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
                 Result += 1;
             }
 
-            if (ev.GetType() == typeof(E))
+            if (ev.GetType() == typeof(E) && MarksStop(ev))
             {
-                if (MarksStop(ev))
-                {
-                    _done = true;
-                }
+                State = VisitorState.Done;
             }
         }
 
+        /// <summary>
+        /// Checks if the event has a start opcode if the visitor is constructed to check.
+        /// </summary>
+        /// <param name="ev"> Event </param>
+        /// <returns> True if unchecked or if it's checked and has start opcode </returns>
         private bool MarksStart(TRACING.TraceEvent ev)
         {
-            if (_checkOpcode == false || (_checkOpcode == true && ev.Opcode == TRACING.TraceEventOpcode.Start))
-            {
-                return true;
-            }
-
-            return false;
+            return !_checkOpcode || (_checkOpcode && ev.Opcode == TRACING.TraceEventOpcode.Start);
         }
 
+        /// <summary>
+        /// Checks if the event has a start opcode if the visitor is constructed to check.
+        /// </summary>
+        /// <param name="ev"> Event </param>
+        /// <returns> True if unchecked or if it's checked and has start opcode </returns>
         private bool MarksStop(TRACING.TraceEvent ev)
         {
-            if (_checkOpcode == false || (_checkOpcode == true && ev.Opcode == TRACING.TraceEventOpcode.Stop))
-            {
-                return true;
-            }
-
-            return false;
+            return !_checkOpcode || (_checkOpcode && ev.Opcode == TRACING.TraceEventOpcode.Stop);
         }
     }
 }
