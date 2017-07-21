@@ -70,8 +70,8 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                     || jitMethodVisitor.State == VisitorState.Error
                     || contextSwitchesPerMethodVisitor.State == VisitorState.Error
                     || hardFaultsPerMethodVisitor.State == VisitorState.Error
-                    || hardFaultsPerThreadVisitor.State == VisitorState.Error
-                    || contextSwitchesPerThreadVisitor.State == VisitorState.Error)
+                    || hardFaultsPerThreadVisitor.State != VisitorState.Done
+                    || contextSwitchesPerThreadVisitor.State != VisitorState.Done)
                 {
                     return false;
                 }

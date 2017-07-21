@@ -49,6 +49,7 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
                 _lastSwitchinOrJitStart = jitStartEv.TimeStampRelativeMSec;
                 _methodJitting = jitStartEv;
                 _accumulator = 0.0;
+                return;
             }
             else if (ev is PARSERS.Kernel.CSwitchTraceData cSwitchEv)
             {
@@ -66,6 +67,7 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
                     _lastSwitchinOrJitStart = cSwitchEv.TimeStampRelativeMSec;
                     _lastSwitchIn = cSwitchEv.TimeStampRelativeMSec;
                 }
+                return;
             }
             else if (ev is PARSERS.Clr.MethodLoadUnloadVerboseTraceData jitEndEv)
             {
@@ -82,6 +84,7 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
 
                 _internalState = InternalState.JitFinished;
                 _methodJitting = null;
+                return;
             }
             State = VisitorState.Error;
         }

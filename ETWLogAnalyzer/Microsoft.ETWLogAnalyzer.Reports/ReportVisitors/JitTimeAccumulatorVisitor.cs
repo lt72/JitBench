@@ -56,7 +56,7 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
             }
             else if (ev is PARSERS.Clr.MethodLoadUnloadVerboseTraceData jitEndEv)
             {
-                if (_internalState != InternalState.JitRunning || jitEndEv.MethodID == _methodJitting.MethodID)
+                if (_internalState != InternalState.JitRunning || jitEndEv.MethodID != _methodJitting.MethodID)
                 {
                     Debug.Assert(false, "Method jitted doesn't match with the event start.");
                     State = VisitorState.Error;
