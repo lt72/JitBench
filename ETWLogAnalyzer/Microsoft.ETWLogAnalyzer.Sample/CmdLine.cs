@@ -5,6 +5,9 @@ using System.Reflection;
 
 namespace Microsoft.ETWLogAnalyzer
 {
+    /// <summary>
+    /// Command line utility parser.
+    /// </summary>
     internal static class CmdLine
     {
         internal enum Cmd
@@ -13,6 +16,9 @@ namespace Microsoft.ETWLogAnalyzer
             Run,
         }
 
+        /// <summary>
+        /// Argument abstraction. Includes switch and default value as well as a description.
+        /// </summary>
         internal class Argument
         {
             protected Argument(string swtch, string example, string description, string deflt, string value)
@@ -49,7 +55,7 @@ namespace Microsoft.ETWLogAnalyzer
 
             internal virtual string PrettyPrint()
             {
-                return $"{Switch}{CmdLine.SwitchValueSeparator}<{Example}>: {Description}. If not specified defauls to {Default}.";
+                return $"{Switch}{SwitchValueSeparator}<{Example}>: {Description}. If not specified defauls to {Default}.";
             }
         }
 
@@ -103,6 +109,9 @@ namespace Microsoft.ETWLogAnalyzer
         internal static readonly string WaitDescription = "if true program waits for a key press before exiting.";    
         internal static readonly string WaitDefault = "true";
 
+        /// <summary>
+        /// Add the new arguments here.
+        /// </summary>
         static CmdLine()
         {
             Arguments.Add(HelpSwitch, Argument.New(HelpSwitch, String.Empty, HelpDescription, String.Empty, String.Empty));
@@ -113,6 +122,11 @@ namespace Microsoft.ETWLogAnalyzer
             Arguments.Add(WaitSwitch, Argument.New(WaitSwitch, WaitExample, WaitDescription, WaitDefault, WaitDefault));
         }
 
+        /// <summary>
+        /// Parses arguments and cache the values.
+        /// </summary>
+        /// <param name="args"> Arguments as passed to the program. </param>
+        /// <returns> Enum value to determine if program should show help or run. </returns>
         internal static Cmd Process(string[] args)
         {
             foreach(var arg in args)
@@ -151,6 +165,10 @@ namespace Microsoft.ETWLogAnalyzer
             return Cmd.Run;
         }
 
+        /// <summary>
+        /// Display help.
+        /// </summary>
+        /// <returns> -1 </returns>
         internal static int Usage()
         {
             System.Console.WriteLine("Starts a new instance of the ETWLogAnalyzer for the JitBench repo. See https://github.com/aspnet/jitbench");
