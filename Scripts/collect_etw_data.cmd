@@ -127,6 +127,6 @@ echo     Help/-h/-help/-?: Display this message.
 echo.
 echo.
 echo In case you need to modify the events collected modify the variables at the top of this script.
-echo In case you need to modify the framework for a custom run please check the documentation for instructions.
+echo In case you need to modify the framework for a custom run (say for tiered jitting) please check the documentation for instructions.
 echo.
 :: ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
