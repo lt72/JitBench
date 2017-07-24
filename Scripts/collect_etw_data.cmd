@@ -15,7 +15,7 @@ set PROVIDERS="*aspnet-JitBench-MusicStore"
 
 REM If you modify these variables you'll have to modify MusicStore's csproj file as well to reflect the changes
 set SDK_VERSION="2.1.0-preview1-006776"
-set SHARED_FRAMEWORK_VERSION="2.1.0-preview2-25513-01"
+set SHARED_FRAMEWORK_VERSION="2.1.0-preview2-25523-01"
 
 :: Do not modify these variables
 set ORIGINALDIR=%CD%
@@ -94,7 +94,7 @@ IF %DisableSuperfetch% EQU 1 (
 	"%PFUTIL%" -purge
 )
 
-"%PERFVIEW%" /NoGui /NoView /ClrEvents:%DOTNET_EVENTS% /KernelEvents:%KERNEL_EVENTS% /Providers:%PROVIDERS% /Zip:FALSE /BufferSize:2048 run "%DOTNET%" MusicStore.dll
+"%PERFVIEW%" /LogFile:PerfViewRun.log /AcceptEula /ClrEvents:%DOTNET_EVENTS% /KernelEvents:%KERNEL_EVENTS% /Providers:%PROVIDERS% /Zip:FALSE /BufferSize:2048 run "%DOTNET%" MusicStore.dll
 
 IF %DisableSuperfetch% EQU 1 (
 	"%PFUTIL%" -prefetch 1
