@@ -14,7 +14,7 @@ set KERNEL_EVENTS="Verbose"
 set PROVIDERS="*aspnet-JitBench-MusicStore"
 
 REM If you modify these variables you'll have to modify MusicStore's csproj file as well to reflect the changes
-set SDK_VERSION="2.1.0-preview1-006776"
+set SDK_VERSION="2.1.0-preview1-006868"
 set SHARED_FRAMEWORK_VERSION="2.1.0-preview2-25523-01"
 
 :: Do not modify these variables
