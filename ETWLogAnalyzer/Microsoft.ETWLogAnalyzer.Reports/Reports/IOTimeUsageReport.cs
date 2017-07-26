@@ -12,7 +12,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
     /// This report analyzes how nominal JIT time gets split into I/O time, non-I/O unscheduled time, idle time, Jitting time
     /// for each thread and for each method of the process.
     /// </summary>
-    public class IOTimeUsageStatistics : IReport
+    public class IOTimeUsageReport : IReport
     {
         private class TimeAllocationInfo
         {
@@ -34,9 +34,9 @@ namespace Microsoft.ETWLogAnalyzer.Reports
 
         private static readonly string FormatString = "{0, -35}:\t{1:F2}";
         private Dictionary<int, Dictionary<MethodUniqueIdentifier, TimeAllocationInfo>> _methodUnscheduledTimeStats;
-        public string Name => "io_time_usage_stats.txt";
+        public string Name => "io_time_usage_report.txt";
 
-        public IOTimeUsageStatistics()
+        public IOTimeUsageReport()
         {
             _methodUnscheduledTimeStats = new Dictionary<int, Dictionary<MethodUniqueIdentifier, TimeAllocationInfo>>();
         }

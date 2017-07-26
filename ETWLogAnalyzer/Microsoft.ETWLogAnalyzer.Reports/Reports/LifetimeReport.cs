@@ -12,7 +12,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
     /// Report that sumarizes time taken by each thread and the process itself as well as the time taken to main, server started,
     /// and first request served.
     /// </summary>
-    public class LifetimeStatistics : IReport
+    public class LifetimeReport : IReport
     {
         private struct ThreadLifeInfo
         {
@@ -37,9 +37,9 @@ namespace Microsoft.ETWLogAnalyzer.Reports
         private string _processName;
         private int _pid;
         private Dictionary<int, ThreadLifeInfo> _threadInfoTable;
-        public string Name => "lifetime_stats.txt";
+        public string Name => "lifetime_report.txt";
 
-        public LifetimeStatistics()
+        public LifetimeReport()
         {
             _threadInfoTable = new Dictionary<int, ThreadLifeInfo>();
         }

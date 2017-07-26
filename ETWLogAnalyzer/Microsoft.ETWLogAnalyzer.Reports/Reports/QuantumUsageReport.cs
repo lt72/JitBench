@@ -11,7 +11,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
     /// <summary>
     /// Report that analyzes how much of the scheduler quantums/time slices the different threads/methods are using.
     /// </summary>
-    public class QuantumUsageStatistics : IReport
+    public class QuantumUsageReport : IReport
     {
         private class QuantumTimeInfo
         {
@@ -33,9 +33,9 @@ namespace Microsoft.ETWLogAnalyzer.Reports
         private Dictionary<int, long> _hardFaultsPerThread;
         private Dictionary<MethodUniqueIdentifier, long> _contextSwitchesPerMethod;
         private Dictionary<MethodUniqueIdentifier, long> _hardFaultsPerMethod;
-        public string Name => "quantum_usage_stats.txt";
+        public string Name => "quantum_usage_report.txt";
 
-        public QuantumUsageStatistics()
+        public QuantumUsageReport()
         {
             _methodJistStatsPerThread = new Dictionary<int, Dictionary<MethodUniqueIdentifier, QuantumTimeInfo>>();
             _firstMethodJitted = new Dictionary<int, MethodUniqueIdentifier>();

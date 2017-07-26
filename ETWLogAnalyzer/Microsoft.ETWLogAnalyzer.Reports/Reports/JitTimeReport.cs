@@ -15,7 +15,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
     /// This report sumarizes how much time of the perceived time for jitting is used for jitting actually
     /// as well as an analysis of hard memory faults and context switches during jitting events.
     /// </summary>
-    public class JitTimeStatistics : IReport
+    public class JitTimeReport : IReport
     {
         private class JitTimeInfo
         {
@@ -37,9 +37,9 @@ namespace Microsoft.ETWLogAnalyzer.Reports
         private Dictionary<int, long> _hardFaultsPerThread;
         private Dictionary<MethodUniqueIdentifier, long> _contextSwitchesPerMethod;
         private Dictionary<MethodUniqueIdentifier, long> _hardFaultsPerMethod;
-        public string Name => "jit_time_stats.txt";
+        public string Name => "jit_time_report.txt";
 
-        public JitTimeStatistics()
+        public JitTimeReport()
         {
             _methodJitStatsPerThread = new Dictionary<int, Dictionary<MethodUniqueIdentifier, JitTimeInfo>>();
             _firstMethodJitted = new Dictionary<int, MethodUniqueIdentifier>();

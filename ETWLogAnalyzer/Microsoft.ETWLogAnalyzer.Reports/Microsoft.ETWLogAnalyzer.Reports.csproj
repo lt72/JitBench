@@ -52,11 +52,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Reports\IOTimeUsageStatistics.cs" />
-    <Compile Include="Reports\JitTimeStatistics.cs" />
-    <Compile Include="Reports\LifetimeStatistics.cs" />
-    <Compile Include="Reports\QuantumUsageStatistics.cs" />
+    <Compile Include="Reports\IOTimeUsageReport.cs" />
+    <Compile Include="Reports\JitTimeReport.cs" />
+    <Compile Include="Reports\LifetimeReport.cs" />
+    <Compile Include="Reports\ModulesLoadedReport.cs" />
+    <Compile Include="Reports\QuantumUsageReport.cs" />
     <Compile Include="ReportVisitors\AvailableQuantumAccumulatorVisitor.cs" />
+    <Compile Include="ReportVisitors\CollectEventsInWindowVisitor.cs" />
+    <Compile Include="ReportVisitors\CollectEventsVisitor.cs" />
     <Compile Include="ReportVisitors\GetCountEventsBetweenAllStartStopEventsPairVisitor.cs" />
     <Compile Include="ReportVisitors\GetCountEventsBetweenStartStopEventsPairVisitor.cs" />
     <Compile Include="ReportVisitors\GetFirstMatchingEventVisitor.cs" />

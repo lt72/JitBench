@@ -194,11 +194,6 @@ namespace Microsoft.ETWLogAnalyzer
                     events.StoreIfRelevant(data);
                 };
 
-                clrParser.LoaderAssemblyLoad += delegate (PARSERS.Clr.AssemblyLoadUnloadTraceData data)
-                {
-                    events.StoreIfRelevant(data);
-                };
-
                 // Custom instrumentation 
 
                 PARSERS.DynamicTraceEventParser eventSourceParser = source.Dynamic;

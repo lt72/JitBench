@@ -34,7 +34,7 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
                 return;
             }
 
-            if(ev.GetType() == typeof(S) && MarksStart(ev))
+            if(ev is S && MarksStart(ev))
             {
                 if (_active)
                 {
@@ -44,12 +44,12 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
                 _active = true;
             }
 
-            if (ev.GetType() == typeof(T))
+            if (ev is T)
             {
                 Result += 1;
             }
 
-            if (ev.GetType() == typeof(E) && MarksStop(ev))
+            if (ev is E && MarksStop(ev))
             {
                 State = VisitorState.Done;
             }

@@ -1,64 +1,68 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Microsoft.ETWLogAnalyzer.Abstractions;
 using TRACING = Microsoft.Diagnostics.Tracing;
 
-namespace Microsoft.ETWLogAnalyzer.ReportVisitors
+namespace Microsoft.ETWLogAnalyzer.Reports.ReportVisitors
 {
     /// <summary>
-    /// Counts the number of a specific type of event in a window delimited by two types of events.
+    /// Collects events of a given type in a window delimited by two types of events.
     /// </summary>
     /// <typeparam name="S"> Event type that denotes start of the window. </typeparam>
     /// <typeparam name="E"> Event type that denotes end of the window. Must be different from S. </typeparam>
-    /// <typeparam name="T"> Type of event to be counted </typeparam>
-    /// <typeparam name="K"> Key to map the count in a window to. Must implement IConstructable&lt;K, E&gt; and have a default constructor.</typeparam>
-    public class GetCountEventsBetweenAllStartStopEventsPairVisitor<S,E,T,K> : EventVisitor<Dictionary<K,long>>
+    /// <typeparam name="T"> Type of event to be collected </typeparam>
+    /// <typeparam name="K"> Key to map the collection from the window to. Must implement IConstructable&lt;K, E&gt; and have a default constructor.</typeparam>
+    public class CollectEventsInWindowVisitor<S, E, T, K> : EventVisitor<Dictionary<K, List<T>>>
         where S : TRACING.TraceEvent
         where E : TRACING.TraceEvent
+        where T : TRACING.TraceEvent
         where K : IConstructable<K, E>, new()
     {
-        private bool _active;
-        private long _curCount;
         private readonly bool _checkOpcode;
+        private bool _withinWindow;
+        private List<T> _partialCollection;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="checkOpcode"> Set to true if S and E are marked with TraceEventOpcode.Start and TraceEventOpcode.End and must be checked. </param>
-        public GetCountEventsBetweenAllStartStopEventsPairVisitor(bool checkOpcode) : base()
+        public CollectEventsInWindowVisitor(bool checkOpcode = false)
         {
-            _active = false;
             _checkOpcode = checkOpcode;
-            Result = new Dictionary<K, long>();
-            AddRelevantTypes(new List<Type> { typeof(T), typeof(S), typeof(E) });
+            _withinWindow = false;
+            Result = new Dictionary<K, List<T>>();
+            AddRelevantTypes(new List<System.Type> { typeof(S), typeof(T), typeof(E) });
         }
 
         public override void Visit(TRACING.TraceEvent ev)
         {
-            if (_active == false && ev.GetType() != typeof(S))
+            if (ev is S)
             {
-                // Ignore elements not in the window.
+                _partialCollection = new List<T>();
+                _withinWindow = true;
                 return;
             }
-            
-            // If start events are nested, reset the total count. Happens if the timeline shows an event that
-            // started a window but the completion event was never emmited.
-            if(ev is S && MarksStart(ev))
+
+            if (!_withinWindow)
             {
-                _curCount = 0;
-                _active = true;
+                return;
             }
 
-            if (ev is T)
+            if (ev is T evAsT)
             {
-                _curCount += 1;
+                _partialCollection.Add(evAsT);
+                return;
             }
 
-            if (ev is E evAsE && MarksStop(ev))
+            if (ev is E evAsE)
             {
-                _active = false;
-                Result.Add(new K().Create(evAsE), _curCount);
+                Result.Add(new K().Create(evAsE), _partialCollection);
+                _partialCollection = null;
+                _withinWindow = false;
+                return;
             }
+
+            System.Diagnostics.Debug.Assert(false, $"Unexpected type {ev.GetType().Name} reached the visitor.");
+            State = VisitorState.Error;
         }
 
         /// <summary>
