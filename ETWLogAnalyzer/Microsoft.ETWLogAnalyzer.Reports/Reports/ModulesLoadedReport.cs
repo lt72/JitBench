@@ -97,15 +97,16 @@ namespace Microsoft.ETWLogAnalyzer.Reports.Reports
 
                 writer.WriteTitle("Modules loaded on Method Jitting");
 
-                foreach(var methodModuleListPair in _methodToModuleMap)
+                foreach (var methodModuleListPair in _methodToModuleMap)
                 {
                     writer.WriteHeader(methodModuleListPair.Key.ToString());
                     writer.WriteLine($"Loaded {methodModuleListPair.Value.Count} modules.");
 
                     writer.AddIndentationLevel();
-                    foreach(var module in methodModuleListPair.Value)
+                    for (int index = 0; index < methodModuleListPair.Value.Count; index++)
                     {
-                        writer.WriteLine($"{module.ModuleILFileName} loaded from {module.ModuleILPath}");
+                        var module = methodModuleListPair.Value[index];
+                        writer.WriteLine($"{index + 1}) {module.ModuleILPath}");
                     }
                     writer.RemoveIndentationLevel();
                 }
@@ -113,9 +114,10 @@ namespace Microsoft.ETWLogAnalyzer.Reports.Reports
                 writer.SkipLine();
                 writer.WriteTitle("Modules loaded outside jitting");
 
-                foreach (var module in _modulesOutsideJitting)
+                for (int index = 0; index < _modulesOutsideJitting.Count; index++)
                 {
-                    writer.WriteLine($"{module.ModuleILFileName} loaded from {module.ModuleILPath}");
+                    var module = _modulesOutsideJitting[index];
+                    writer.WriteLine($"{index + 1}) {module.ModuleILPath}");
                 }
             }
 
