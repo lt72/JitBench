@@ -2,7 +2,7 @@
 using TRACING = Microsoft.Diagnostics.Tracing;
 using Microsoft.ETWLogAnalyzer.Abstractions;
 
-namespace Microsoft.ETWLogAnalyzer.EventFilters
+namespace Microsoft.ETWLogAnalyzer.Framework.EventFilters
 {
     /// <summary>
     /// Classifies as relevant by comparing by process ID and 

@@ -3,11 +3,10 @@ using System.Linq;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.ETWLogAnalyzer.Abstractions;
 using Microsoft.ETWLogAnalyzer.Framework;
-using Microsoft.ETWLogAnalyzer.Reports.ReportVisitors;
+using Microsoft.ETWLogAnalyzer.ReportVisitors;
 using Microsoft.ETWLogAnalyzer.ReportWriters;
 
-
-namespace Microsoft.ETWLogAnalyzer.Reports.Reports
+namespace Microsoft.ETWLogAnalyzer.Reports
 {
     /// <summary>
     /// Report containing the loaded modules during the runtime of an app. 

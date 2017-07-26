@@ -6,7 +6,7 @@ using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.ETWLogAnalyzer.Abstractions;
 
-namespace Microsoft.ETWLogAnalyzer.EventFilters
+namespace Microsoft.ETWLogAnalyzer.Framework.EventFilters
 {
     /// <summary>
     /// Filter for I/O events.

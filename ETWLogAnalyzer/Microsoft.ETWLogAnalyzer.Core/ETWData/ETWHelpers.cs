@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.ETWLogAnalyzer.EventFilters;
+using Microsoft.ETWLogAnalyzer.Framework.EventFilters;
 using Microsoft.ETWLogAnalyzer.Abstractions;
 using System.Diagnostics;
 

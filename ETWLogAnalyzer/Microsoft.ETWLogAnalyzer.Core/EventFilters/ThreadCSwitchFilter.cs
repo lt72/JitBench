@@ -3,7 +3,7 @@ using Microsoft.ETWLogAnalyzer.Abstractions;
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 
-namespace Microsoft.ETWLogAnalyzer.EventFilters
+namespace Microsoft.ETWLogAnalyzer.Framework.EventFilters
 {
     /// <summary>
     /// Classifies the process's context switches into both the leaving thread and the entering thread as necessary.

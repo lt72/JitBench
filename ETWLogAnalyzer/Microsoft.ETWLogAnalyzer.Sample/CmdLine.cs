@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 
-namespace Microsoft.ETWLogAnalyzer
+namespace Microsoft.ETWLogAnalyzer.Utilities
 {
     /// <summary>
     /// Command line utility parser.

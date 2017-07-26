@@ -2,7 +2,7 @@
 using Microsoft.ETWLogAnalyzer.Abstractions;
 using TRACING = Microsoft.Diagnostics.Tracing;
 
-namespace Microsoft.ETWLogAnalyzer.Reports.ReportVisitors
+namespace Microsoft.ETWLogAnalyzer.ReportVisitors
 {
     /// <summary>
     /// Collects events of a given type in a window delimited by two types of events.

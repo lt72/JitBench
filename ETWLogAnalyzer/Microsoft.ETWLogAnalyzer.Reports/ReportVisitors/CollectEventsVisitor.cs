@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using TRACING = Microsoft.Diagnostics.Tracing;
 
-namespace Microsoft.ETWLogAnalyzer.Reports.ReportVisitors
+namespace Microsoft.ETWLogAnalyzer.ReportVisitors
 {
     /// <summary>
     /// Visitor that collects the events of a given type.

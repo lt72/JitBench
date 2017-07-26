@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using TRACING = Microsoft.Diagnostics.Tracing;
 using PARSERS = Microsoft.Diagnostics.Tracing.Parsers;
 
-namespace Microsoft.ETWLogAnalyzer.EventFilters
+namespace Microsoft.ETWLogAnalyzer.Framework.EventFilters
 {
     /// <summary>
     /// Classifies ready thread events to see if the awakened process is the process under test
