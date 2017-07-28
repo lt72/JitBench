@@ -92,7 +92,7 @@ namespace Microsoft.ETWLogAnalyzer.Utilities
         internal static readonly string EtwLogSwitch = "/etwLog";
         internal static readonly string EtwLogExample = "path to file";
         internal static readonly string EtwLogDescription = "name of the ETW log file to analyze";
-        internal static readonly string EtwLogDefault = "." + Path.DirectorySeparatorChar + "PerfViewData.etl.zip";
+        internal static readonly string EtwLogDefault = "." + Path.DirectorySeparatorChar + "PerfViewData.etl";
         //--//
         internal static readonly string ReportPathSwitch = "/reportGenerators";
         internal static readonly string ReportPathExample = "path to a directory";
