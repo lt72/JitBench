@@ -25,24 +25,22 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             }
         }
 
-        private static readonly string FormatString = "{0, -35}:\t{1:F2}";
+        private static readonly string FormatString = "{0, -42}:\t{1:F2}";
 
         private Dictionary<int, Dictionary<MethodUniqueIdentifier, QuantumTimeInfo>> _methodJistStatsPerThread;
         private Dictionary<int, MethodUniqueIdentifier> _firstMethodJitted;
-        private Dictionary<int, long> _contextSwitchesPerThread;
-        private Dictionary<int, long> _hardFaultsPerThread;
-        private Dictionary<MethodUniqueIdentifier, long> _contextSwitchesPerMethod;
-        private Dictionary<MethodUniqueIdentifier, long> _hardFaultsPerMethod;
+        private Dictionary<int, Dictionary<MethodUniqueIdentifier, long>> _contextSwitchesPerMethod;
+        private Dictionary<int, Dictionary<MethodUniqueIdentifier, long>> _hardFaultsPerMethod;
+        private Dictionary<int, Dictionary<MethodUniqueIdentifier, long>> _unnecessaryContextSwitchesForMethodPerThread;
         public string Name => "quantum_usage_report.txt";
 
         public QuantumUsageReport()
         {
             _methodJistStatsPerThread = new Dictionary<int, Dictionary<MethodUniqueIdentifier, QuantumTimeInfo>>();
             _firstMethodJitted = new Dictionary<int, MethodUniqueIdentifier>();
-            _contextSwitchesPerThread = new Dictionary<int, long>();
-            _hardFaultsPerThread = new Dictionary<int, long>();
-            _contextSwitchesPerMethod = new Dictionary<MethodUniqueIdentifier, long>();
-            _hardFaultsPerMethod = new Dictionary<MethodUniqueIdentifier, long>();
+            _contextSwitchesPerMethod = new Dictionary<int, Dictionary<MethodUniqueIdentifier, long>>();
+            _hardFaultsPerMethod = new Dictionary<int, Dictionary<MethodUniqueIdentifier, long>>();
+            _unnecessaryContextSwitchesForMethodPerThread = new Dictionary<int, Dictionary<MethodUniqueIdentifier, long>>();
         }
 
         public bool Analyze(IEventModel data)
@@ -52,16 +50,14 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                 var jitTimeVisitor = new JitTimeAccumulatorVisitor(threadId);
                 var availableQuantumTimeVisitor = new AvailableQuantumAccumulatorVisitor(threadId);
                 var jitMethodVisitor = new GetFirstMatchingEventVisitor<PARSERS.Clr.MethodLoadUnloadVerboseTraceData>();
-                var contextSwitchesPerThreadVisitor = new GetCountEventsBetweenStartStopEventsPairVisitor<PARSERS.Kernel.ThreadTraceData, PARSERS.Kernel.ThreadTraceData, PARSERS.Kernel.CSwitchTraceData>(true);
-                var hardFaultsPerThreadVisitor = new GetCountEventsBetweenStartStopEventsPairVisitor<PARSERS.Kernel.ThreadTraceData, PARSERS.Kernel.ThreadTraceData, PARSERS.Kernel.MemoryHardFaultTraceData>(true);
                 var contextSwitchesPerMethodVisitor = new GetCountEventsBetweenAllStartStopEventsPairVisitor<PARSERS.Clr.MethodJittingStartedTraceData, PARSERS.Clr.MethodLoadUnloadVerboseTraceData, PARSERS.Kernel.CSwitchTraceData, MethodUniqueIdentifier>(false);
                 var hardFaultsPerMethodVisitor = new GetCountEventsBetweenAllStartStopEventsPairVisitor<PARSERS.Clr.MethodJittingStartedTraceData, PARSERS.Clr.MethodLoadUnloadVerboseTraceData, PARSERS.Kernel.MemoryHardFaultTraceData, MethodUniqueIdentifier>(false);
+                var potentiallyUnnecessarySwitchVisitor = new UnnecessaryContextSwitchesVisitor(threadId);
 
                 Controller.RunVisitorForResult(jitTimeVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(availableQuantumTimeVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(jitMethodVisitor, data.GetThreadTimeline(threadId));
-                Controller.RunVisitorForResult(contextSwitchesPerThreadVisitor, data.GetThreadTimeline(threadId));
-                Controller.RunVisitorForResult(hardFaultsPerThreadVisitor, data.GetThreadTimeline(threadId));
+                Controller.RunVisitorForResult(potentiallyUnnecessarySwitchVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(contextSwitchesPerMethodVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(hardFaultsPerMethodVisitor, data.GetThreadTimeline(threadId));
 
@@ -70,29 +66,17 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                     || jitMethodVisitor.State == VisitorState.Error
                     || contextSwitchesPerMethodVisitor.State == VisitorState.Error
                     || hardFaultsPerMethodVisitor.State == VisitorState.Error
-                    || hardFaultsPerThreadVisitor.State != VisitorState.Done
-                    || contextSwitchesPerThreadVisitor.State != VisitorState.Done)
+                    || potentiallyUnnecessarySwitchVisitor.State == VisitorState.Error)
                 {
                     return false;
                 }
 
-                _methodJistStatsPerThread.Add(threadId,
-                    ZipResults(jitTimeVisitor.Result, availableQuantumTimeVisitor.Result));
-
                 var methodUniqueId = (jitMethodVisitor.Result == null) ? null : new MethodUniqueIdentifier(jitMethodVisitor.Result);
+                _methodJistStatsPerThread.Add(threadId, ZipResults(jitTimeVisitor.Result, availableQuantumTimeVisitor.Result));
                 _firstMethodJitted.Add(threadId, methodUniqueId);
-
-                _contextSwitchesPerThread.Add(threadId, contextSwitchesPerThreadVisitor.Result);
-                _hardFaultsPerThread.Add(threadId, hardFaultsPerThreadVisitor.Result);
-
-                foreach (var item in contextSwitchesPerMethodVisitor.Result)
-                {
-                    _contextSwitchesPerMethod.Add(item.Key, item.Value);
-                }
-                foreach (var item in hardFaultsPerMethodVisitor.Result)
-                {
-                    _hardFaultsPerMethod.Add(item.Key, item.Value);
-                }
+                _contextSwitchesPerMethod.Add(threadId, contextSwitchesPerMethodVisitor.Result);
+                _hardFaultsPerMethod.Add(threadId, hardFaultsPerMethodVisitor.Result);
+                _unnecessaryContextSwitchesForMethodPerThread.Add(threadId, potentiallyUnnecessarySwitchVisitor.Result);
             }
             return true;
         }
@@ -122,8 +106,9 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                     writer.WriteLine(String.Format(FormatString, "Effective jitting time [ms]", threadQuantumTime.JitTimeUsed));
                     writer.WriteLine(String.Format(FormatString, "Quantum time assigned for jit [ms]", threadQuantumTime.AvailableQuantumTime));
                     writer.WriteLine(String.Format(FormatString, "Quantum Efficiency [%]", efficiency));
-                    writer.WriteLine(String.Format(FormatString, "Total context switches", _contextSwitchesPerThread[threadInfo.Key]));
-                    writer.WriteLine(String.Format(FormatString, "Total page faults", _hardFaultsPerThread[threadInfo.Key]));
+                    writer.WriteLine(String.Format(FormatString, "Total context switches", _contextSwitchesPerMethod[threadInfo.Key].Values.Aggregate(0, (long accum, long val) => (accum + val))));
+                    writer.WriteLine(String.Format(FormatString, "Potentially unnecessary context switches", _unnecessaryContextSwitchesForMethodPerThread[threadInfo.Key].Values.Aggregate(0, (long accum, long val) => accum + val)));
+                    writer.WriteLine(String.Format(FormatString, "Total page faults", _hardFaultsPerMethod[threadInfo.Key].Values.Aggregate(0, (long accum, long val) => (accum + val))));
                     writer.RemoveIndentationLevel();
                 }
 
@@ -132,9 +117,9 @@ namespace Microsoft.ETWLogAnalyzer.Reports
 
                 writer.WriteTitle("Method Jitting Statistics");
 
-                foreach (var methodsInThread in _methodJistStatsPerThread.Values)
+                foreach (var methodsInThread in _methodJistStatsPerThread)
                 {
-                    foreach (var methodInfoTimePair in methodsInThread)
+                    foreach (var methodInfoTimePair in methodsInThread.Value)
                     {
                         writer.WriteHeader("Method " + methodInfoTimePair.Key);
 
@@ -145,8 +130,9 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                         writer.WriteLine(String.Format(FormatString, "Effective jitting time [ms]", jitTime));
                         writer.WriteLine(String.Format(FormatString, "Quantum time assigned for jit [ms]", requestedTime));
                         writer.WriteLine(String.Format(FormatString, "Quantum efficiency [%]", 100.0 * jitTime / requestedTime));
-                        writer.WriteLine(String.Format(FormatString, "Total context switches", _contextSwitchesPerMethod[methodInfoTimePair.Key]));
-                        writer.WriteLine(String.Format(FormatString, "Total page faults", _hardFaultsPerMethod[methodInfoTimePair.Key]));
+                        writer.WriteLine(String.Format(FormatString, "Total context switches", _contextSwitchesPerMethod[methodsInThread.Key][methodInfoTimePair.Key]));
+                        writer.WriteLine(String.Format(FormatString, "Potentially unnecessary context switches", _unnecessaryContextSwitchesForMethodPerThread[methodsInThread.Key][methodInfoTimePair.Key]));
+                        writer.WriteLine(String.Format(FormatString, "Total page faults", _hardFaultsPerMethod[methodsInThread.Key][methodInfoTimePair.Key]));
 
                         writer.RemoveIndentationLevel();
                     }

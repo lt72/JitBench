@@ -15,36 +15,35 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
         where S : TRACING.TraceEvent
         where E : TRACING.TraceEvent
     {
+        private static Predicate<T> DefaultTrue = x => true;
+        private readonly Predicate<T> _matchingCondition;
         private bool _active;
         private readonly bool _checkOpcode;
 
-        public GetCountEventsBetweenStartStopEventsPairVisitor(bool checkOpcode) : base()
+
+        public GetCountEventsBetweenStartStopEventsPairVisitor(bool checkOpcode = false, Predicate<T> matchingCriteria = null) : base()
         {
+            AddRelevantTypes(new List<Type> { typeof(T), typeof(S), typeof(E) });
+            _matchingCondition = matchingCriteria ?? DefaultTrue;
             _active = false;
             _checkOpcode = checkOpcode;
             Result = 0;
-            AddRelevantTypes(new List<Type> { typeof(T), typeof(S), typeof(E) });
         }
 
         public override void Visit(TRACING.TraceEvent ev)
         {
-            if(State == VisitorState.Done || (!_active && ev.GetType() != typeof(S)))
-            {
-                // Skip if done or if event is not in the window.
-                return;
-            }
-
             if(ev is S && MarksStart(ev))
             {
-                if (_active)
-                {
-                    // Reset the count if the start events are nested.
-                    Result = 0;
-                }
+                Result = 0;
                 _active = true;
             }
 
-            if (ev is T)
+            if (!_active)
+            {
+                return;
+            }
+
+            if (ev is T evAsT && _matchingCondition(evAsT))
             {
                 Result += 1;
             }

@@ -20,36 +20,38 @@ namespace Microsoft.ETWLogAnalyzer.ReportVisitors
         private bool _active;
         private long _curCount;
         private readonly bool _checkOpcode;
+        private static Predicate<T> DefaultTrue = x => true;
+        private readonly Predicate<T> _matchingCondition;
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="checkOpcode"> Set to true if S and E are marked with TraceEventOpcode.Start and TraceEventOpcode.End and must be checked. </param>
-        public GetCountEventsBetweenAllStartStopEventsPairVisitor(bool checkOpcode) : base()
+        public GetCountEventsBetweenAllStartStopEventsPairVisitor(bool checkOpcode = false, Predicate<T> matchingCriteria = null) : base()
         {
-            _active = false;
-            _checkOpcode = checkOpcode;
             Result = new Dictionary<K, long>();
             AddRelevantTypes(new List<Type> { typeof(T), typeof(S), typeof(E) });
+            _active = false;
+            _checkOpcode = checkOpcode;
+            _matchingCondition = matchingCriteria ?? DefaultTrue;
         }
 
         public override void Visit(TRACING.TraceEvent ev)
         {
-            if (_active == false && ev.GetType() != typeof(S))
-            {
-                // Ignore elements not in the window.
-                return;
-            }
-            
-            // If start events are nested, reset the total count. Happens if the timeline shows an event that
-            // started a window but the completion event was never emmited.
             if(ev is S && MarksStart(ev))
             {
                 _curCount = 0;
                 _active = true;
+                return;
             }
 
-            if (ev is T)
+            if (!_active)
+            {
+                // Ignore elements not in the window.
+                return;
+            }
+
+            if (ev is T evAsT && _matchingCondition(evAsT))
             {
                 _curCount += 1;
             }

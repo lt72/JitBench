@@ -65,6 +65,7 @@
     <Compile Include="ReportVisitors\GetFirstMatchingEventVisitor.cs" />
     <Compile Include="ReportVisitors\JitTimeAccumulatorVisitor.cs" />
     <Compile Include="ReportVisitors\PerceivedJitTimeVisitor.cs" />
+    <Compile Include="ReportVisitors\UnnecessaryContextSwitchesVisitor.cs" />
     <Compile Include="ReportVisitors\UnscheduledTimeClassifierVisitor.cs" />
     <Compile Include="ReportWriters\PlainTextWriter.cs" />
     <Compile Include="ReportWriters\TextReportWriter.cs" />
