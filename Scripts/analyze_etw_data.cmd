@@ -9,9 +9,9 @@ set BASEDIR=%SCRIPTDIR%..
 set DOTNET=%BASEDIR%\.dotnet\dotnet.exe
 set ETWAPPDIR=%BASEDIR%\ETWLogAnalyzer
 set NUGET=%BASEDIR%\Tools\nuget.exe
-set APP=%ETWAPPDIR%\Microsoft.ETWLogAnalyzer.Sample\bin\%CONFIGURATION%\
 :: Modify only these variables as needed.
 set CONFIGURATION=Release
+set APP=%ETWAPPDIR%\Microsoft.ETWLogAnalyzer.Sample\bin\%CONFIGURATION%\
 set REPORTS=%ETWAPPDIR%\Microsoft.ETWLogAnalyzer.Reports\bin\%CONFIGURATION%\
 set ETL=%BASEDIR%\JitBench\src\MusicStore\bin\%CONFIGURATION%\netcoreapp2.0\publish\PerfViewData.etl
 set TARGET=dotnet
