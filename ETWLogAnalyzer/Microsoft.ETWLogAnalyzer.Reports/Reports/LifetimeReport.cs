@@ -36,6 +36,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
         private double _timeToFirstRequest;
         private string _processName;
         private int _pid;
+        private int _methodCount;
         private Dictionary<int, ThreadLifeInfo> _threadInfoTable;
         public string Name => "lifetime_report.txt";
 
@@ -50,6 +51,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             _processEndTime = data.ProcessStop.TimeStampRelativeMSec;
             _processName = data.ProcessStart.ProcessName;
             _pid = data.ProcessStart.ProcessID;
+            _methodCount = System.Linq.Enumerable.Count(data.JittedMethodsList);
 
             foreach (int threadId in data.ThreadList)
             {
@@ -117,6 +119,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                 writer.WriteLine(String.Format(FormatString, "Time To Program Start [ms]", _timeToMain));
                 writer.WriteLine(String.Format(FormatString, "Time To Server Start [ms]", _timeToServerStarted));
                 writer.WriteLine(String.Format(FormatString, "Time To Request Served [ms]", _timeToFirstRequest));
+                writer.WriteLine(String.Format(FormatString, "Methods Jitted [-]", _methodCount));
 
                 writer.SkipLine();
                 writer.SkipLine();
