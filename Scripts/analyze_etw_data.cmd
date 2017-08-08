@@ -13,21 +13,22 @@ set NUGET=%BASEDIR%\Tools\nuget.exe
 set CONFIGURATION=Release
 set APP=%ETWAPPDIR%\Microsoft.ETWLogAnalyzer.Sample\bin\%CONFIGURATION%\
 set REPORTS=%ETWAPPDIR%\Microsoft.ETWLogAnalyzer.Reports\bin\%CONFIGURATION%\
-set ETL=%BASEDIR%\JitBench\src\MusicStore\bin\%CONFIGURATION%\netcoreapp2.0\publish\PerfViewData.etl
+set ETL_FOLDER=E:\Perfview_Backups
 set TARGET=dotnet
 set OUT_DIR=E:\Reports
-set WAIT=true
+set WAIT=false
 :: ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 cd "%ETWAPPDIR%"
-echo %CD%
-
 "%NUGET%" restore
 devenv Microsoft.ETWLogAnalyzer.sln /Clean %CONFIGURATION%
 devenv Microsoft.ETWLogAnalyzer.sln /Build %CONFIGURATION%
-
 cd "%APP%"
-Microsoft.ETWLogAnalyzer.Sample.exe /reportGenerators=%REPORTS% /target=%TARGET% /etwLog=%ETL% /out-dir=%OUT_DIR% /wait=%WAIT%
+
+for %%F in (%ETL_FOLDER%\*.etl) do (
+	mkdir "%OUT_DIR%\%%~nF"
+	Microsoft.ETWLogAnalyzer.Sample.exe /reportGenerators=%REPORTS% /target=%TARGET% /etwLog=%%F /out-dir=%OUT_DIR%\%%~nF /wait=%WAIT%
+)
 
 cd %ORIGINALDIR%
 
