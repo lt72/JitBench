@@ -35,7 +35,9 @@ namespace Microsoft.ETWLogAnalyzer.Reports
         private Dictionary<int, Dictionary<MethodUniqueIdentifier, long>> _unnecessaryContextSwitchesForMethodPerThread;
         private Dictionary<int, Dictionary<MethodUniqueIdentifier, long>> _contextSwitchesPerMethod;
         private Dictionary<int, Dictionary<MethodUniqueIdentifier, long>> _hardFaultsPerMethod;
+        private Dictionary<MethodUniqueIdentifier, int> _ILSizeMap;
         private Dictionary<int, long> _modulesLoadCountPerThread;
+        private int _methodCount;
 
         public string Name => "jit_time_report.txt";
 
@@ -47,10 +49,13 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             _contextSwitchesPerMethod = new Dictionary<int, Dictionary<MethodUniqueIdentifier, long>>();
             _hardFaultsPerMethod = new Dictionary<int, Dictionary<MethodUniqueIdentifier, long>>();
             _modulesLoadCountPerThread = new Dictionary<int, long>();
+            _ILSizeMap = new Dictionary<MethodUniqueIdentifier, int>();
         }
 
         public bool Analyze(IEventModel data)
         {
+            _methodCount = System.Linq.Enumerable.Count(data.JittedMethodsList);
+
             foreach (int threadId in data.ThreadList)
             {
                 var jitTimeVisitor = new JitTimeAccumulatorVisitor(threadId);
@@ -60,6 +65,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                 var hardFaultsPerMethodVisitor = new GetCountEventsBetweenAllStartStopEventsPairVisitor<PARSERS.Clr.MethodJittingStartedTraceData, PARSERS.Clr.MethodLoadUnloadVerboseTraceData, PARSERS.Kernel.MemoryHardFaultTraceData, MethodUniqueIdentifier>();
                 var moduleJittingCountVisitor = new GetCountEventsBetweenAllStartStopEventsPairVisitor<PARSERS.Clr.MethodJittingStartedTraceData, PARSERS.Clr.MethodLoadUnloadVerboseTraceData, PARSERS.Clr.ModuleLoadUnloadTraceData, MethodUniqueIdentifier>(false);
                 var potentiallyUnnecessarySwitchVisitor = new UnnecessaryContextSwitchesVisitor(threadId);
+                var ILCalculatorVisitor = new ILSizeVisitor();
 
                 Controller.RunVisitorForResult(jitTimeVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(perceivedJitTimeVisitor, data.GetThreadTimeline(threadId));
@@ -68,6 +74,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                 Controller.RunVisitorForResult(hardFaultsPerMethodVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(moduleJittingCountVisitor, data.GetThreadTimeline(threadId));
                 Controller.RunVisitorForResult(potentiallyUnnecessarySwitchVisitor, data.GetThreadTimeline(threadId));
+                Controller.RunVisitorForResult(ILCalculatorVisitor, data.GetThreadTimeline(threadId));
 
                 if (jitTimeVisitor.State == VisitorState.Error
                     || perceivedJitTimeVisitor.State ==VisitorState.Error
@@ -75,7 +82,8 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                     || contextSwitchesPerMethodVisitor.State == VisitorState.Error
                     || hardFaultsPerMethodVisitor.State == VisitorState.Error
                     || moduleJittingCountVisitor.State == VisitorState.Error
-                    || potentiallyUnnecessarySwitchVisitor.State == VisitorState.Error)
+                    || potentiallyUnnecessarySwitchVisitor.State == VisitorState.Error
+                    || ILCalculatorVisitor.State == VisitorState.Error)
                 {
                     return false;
                 }
@@ -87,6 +95,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                 _unnecessaryContextSwitchesForMethodPerThread.Add(threadId, potentiallyUnnecessarySwitchVisitor.Result);
                 _contextSwitchesPerMethod.Add(threadId, contextSwitchesPerMethodVisitor.Result);
                 _hardFaultsPerMethod.Add(threadId, hardFaultsPerMethodVisitor.Result);
+                _ILSizeMap = _ILSizeMap.Union(ILCalculatorVisitor.Result).ToDictionary(k => k.Key, k => k.Value);
             }
             return true;
         }
@@ -96,7 +105,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
             using (var writer = new PlainTextWriter(System.IO.Path.Combine(folderPath, Name)))
             {
                 writer.WriteTitle("Jit time statistics per thread");
-                writer.Write($"\nThe process used {_methodJitStatsPerThread.Count} thread(s) as follows:");
+                writer.Write($"\nThe process used {_methodJitStatsPerThread.Count} thread(s) to jit {_methodCount} methods as follows:");
 
                 foreach (var threadInfo in _methodJitStatsPerThread)
                 {
@@ -108,10 +117,10 @@ namespace Microsoft.ETWLogAnalyzer.Reports
                     writer.WriteHeader("Thread " + threadInfo.Key);
 
                     writer.AddIndentationLevel();
+                    writer.WriteLine(String.Format(FormatString, "Total jitted methods [-]", threadInfo.Value.Count));
                     if (_firstMethodJitted.TryGetValue(threadInfo.Key, out var methodUniqueId))
                     {
                         var firstJittedMethod = methodUniqueId == null ? "<none>" : methodUniqueId.FullyQualifiedName;
-
                         writer.WriteLine($"First jitted method '{firstJittedMethod}'.");
                     }
                     writer.WriteLine(String.Format(FormatString, "Effective jitting time [ms]", threadJitTimes.JitTimeUsed));
@@ -139,6 +148,7 @@ namespace Microsoft.ETWLogAnalyzer.Reports
 
                         double jitTime = methodIdJitTimePair.Value.JitTimeUsed;
                         double perceivedTime = methodIdJitTimePair.Value.PerceivedJitTime;
+                        writer.WriteLine(String.Format(FormatString, "Method IL size [B]", _ILSizeMap[methodIdJitTimePair.Key]));
                         writer.WriteLine(String.Format(FormatString, "Effective jitting time [ms]", jitTime));
                         writer.WriteLine(String.Format(FormatString, "Perceived jitting time [ms]", perceivedTime));
                         writer.WriteLine(String.Format(FormatString, "Jit time usage efficiency [%]", 100.0 * jitTime / perceivedTime));
