@@ -64,6 +64,7 @@
     <Compile Include="ReportVisitors\GetCountEventsBetweenAllStartStopEventsPairVisitor.cs" />
     <Compile Include="ReportVisitors\GetCountEventsBetweenStartStopEventsPairVisitor.cs" />
     <Compile Include="ReportVisitors\GetFirstMatchingEventVisitor.cs" />
+    <Compile Include="ReportVisitors\ILSizeVisitor.cs" />
     <Compile Include="ReportVisitors\JitTimeAccumulatorVisitor.cs" />
     <Compile Include="ReportVisitors\PerceivedJitTimeVisitor.cs" />
     <Compile Include="ReportVisitors\UnnecessaryContextSwitchesVisitor.cs" />
